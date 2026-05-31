@@ -24,7 +24,6 @@ export const UI_COPY = {
     description:
       "Curated internal agent skills for discovery, review, version tracking, and governed reuse across teams.",
     tags: {
-      currentResults: "Current results",
       collectedSkills: "Collected SKILL.md files",
       controlledSources: "Controlled Git sources",
       versionAudit: "Version history & audit trail",

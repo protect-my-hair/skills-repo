@@ -156,11 +156,6 @@ export function SkillsConsole() {
   const tools = unique(skills.flatMap((skill) => skill.compatibleTools));
   const recentAuditLogs = snapshot?.auditLogs.slice(0, 5) ?? [];
   const heroTags = [
-    { label: `${ROLE_LABELS[role]}视图` },
-    {
-      value: filteredSkills.length.toLocaleString("en-US"),
-      label: UI_COPY.header.tags.currentResults,
-    },
     {
       value: summary.total.toLocaleString("en-US"),
       label: UI_COPY.header.tags.collectedSkills,
@@ -849,6 +844,8 @@ function SkillDetail({
   onTransition: (status: SkillStatus) => void;
 }) {
   const currentVersion = getCurrentVersion(skill);
+  const latestVersion = skill.versions.at(-1);
+  const publishedVersionCount = skill.versions.filter((version) => version.publishedAt).length;
 
   return (
     <>
@@ -942,31 +939,80 @@ function SkillDetail({
       </section>
 
       <section className="detail-section">
-        <h3>{UI_COPY.detail.versionHistory}</h3>
+        <div className="section-heading">
+          <div>
+            <h3>{UI_COPY.detail.versionHistory}</h3>
+            <p>{skill.versions.length} release snapshots</p>
+          </div>
+          <div className="section-pills">
+            {latestVersion ? (
+              <span className="detail-pill positive">
+                {UI_COPY.version.current} {latestVersion.version}
+              </span>
+            ) : null}
+            <span className="detail-pill subtle">
+              {STATUS_LABELS.published} {publishedVersionCount}
+            </span>
+          </div>
+        </div>
         <div className="version-list">
-          {skill.versions.map((version) => (
-            <div key={version.id} className="version-row">
-              <strong>{version.version}</strong>
-              <span>{version.changelog}</span>
-              <small>
-                {version.publishedAt
-                  ? `${UI_COPY.detail.published} ${formatDate(version.publishedAt)}`
-                  : UI_COPY.detail.draft}
-                {version.publisher
-                  ? ` ${UI_COPY.detail.by} ${version.publisher}`
-                  : ` ${UI_COPY.detail.by} ${version.author}`}
-              </small>
-            </div>
-          ))}
+          {skill.versions.map((version, index) => {
+            const isLatestVersion = index === skill.versions.length - 1;
+            const versionOwner = version.publisher ?? version.author;
+
+            return (
+              <article
+                key={version.id}
+                className={`version-card ${isLatestVersion ? "latest" : ""}`}
+              >
+                <div className="version-card-rail" aria-hidden="true">
+                  <span className="version-card-node" />
+                </div>
+                <div className="version-card-body">
+                  <div className="version-card-head">
+                    <div className="version-card-title">
+                      <strong>{version.version}</strong>
+                      <div className="version-card-pills">
+                        {isLatestVersion ? (
+                          <span className="detail-pill positive">{UI_COPY.version.current}</span>
+                        ) : null}
+                        <span className={`detail-pill ${version.publishedAt ? "positive" : "subtle"}`}>
+                          {version.publishedAt ? STATUS_LABELS.published : STATUS_LABELS.draft}
+                        </span>
+                      </div>
+                    </div>
+                    <p>{version.changelog}</p>
+                  </div>
+                  <div className="version-card-meta">
+                    <span>
+                      <CalendarDays size={14} aria-hidden="true" />
+                      {version.publishedAt
+                        ? `${UI_COPY.detail.published} ${formatDate(version.publishedAt)}`
+                        : UI_COPY.detail.draft}
+                    </span>
+                    <span>
+                      <Users size={14} aria-hidden="true" />
+                      {UI_COPY.detail.by} {versionOwner}
+                    </span>
+                  </div>
+                </div>
+              </article>
+            );
+          })}
         </div>
         <VersionDiff skill={skill} />
       </section>
 
       <section className="detail-section">
-        <h3>{UI_COPY.detail.recentAuditTrail}</h3>
+        <div className="section-heading">
+          <div>
+            <h3>{UI_COPY.detail.recentAuditTrail}</h3>
+            <p>{auditLogs.length} recent events</p>
+          </div>
+        </div>
         <div className="audit-list">
           {auditLogs.map((log) => (
-            <div key={log.id}>
+            <div key={log.id} className="audit-row">
               <span>{log.summary}</span>
               <small>{formatDate(log.createdAt)}</small>
             </div>
@@ -1153,20 +1199,29 @@ function VersionDiff({ skill }: { skill: Skill }) {
 
   return (
     <div className="diff-box">
-      <strong>
-        {UI_COPY.version.diff}: {previous.version} → {latest.version}
-      </strong>
-      {added.map((line) => (
-        <span key={`add-${line}`} className="diff-add">
-          + {line}
+      <div className="diff-box-header">
+        <strong>{UI_COPY.version.diff}</strong>
+        <span>
+          {previous.version} → {latest.version}
         </span>
-      ))}
-      {removed.map((line) => (
-        <span key={`remove-${line}`} className="diff-remove">
-          - {line}
-        </span>
-      ))}
-      {added.length === 0 && removed.length === 0 ? <span>{UI_COPY.version.noContentChanges}</span> : null}
+      </div>
+      <div className="diff-summary">
+        <span className="diff-stat add">+ {added.length}</span>
+        <span className="diff-stat remove">- {removed.length}</span>
+      </div>
+      <div className="diff-lines">
+        {added.map((line) => (
+          <span key={`add-${line}`} className="diff-add">
+            + {line}
+          </span>
+        ))}
+        {removed.map((line) => (
+          <span key={`remove-${line}`} className="diff-remove">
+            - {line}
+          </span>
+        ))}
+        {added.length === 0 && removed.length === 0 ? <span>{UI_COPY.version.noContentChanges}</span> : null}
+      </div>
     </div>
   );
 }

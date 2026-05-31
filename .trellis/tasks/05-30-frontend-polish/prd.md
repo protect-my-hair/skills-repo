@@ -31,6 +31,16 @@
   SKILL.md files, current results, controlled Git sources, and version/audit
   history. This remains visual polish only: no new routes, filters, buttons,
   data fields, backend calls, or logout behavior.
+- Latest browser feedback: the hero tag group should stay curated rather than
+  exhaustive. Remove the employee-view and current-results pills from the hero
+  tag row, keep the denser marketplace-style visual balance with the remaining
+  repository-scope tags, and avoid turning the hero into a status dashboard.
+- Latest browser feedback: the detail-panel version history block should be
+  redesigned using the same dark console / marketplace language. Treat version
+  history as a release timeline with clearer hierarchy for version number,
+  release state, changelog, publisher metadata, and diff output. This remains a
+  frontend-only visual refinement with no changes to version logic or audit
+  data.
 
 - 本轮追加要求使用项目内 `.codex/skills/ui-ux-pro-max` 作为设计指导来源，只做页面视觉设计美化。
 - 不得修改原后端代码；如果实施过程中发现必须修改后端/API/数据模型/服务逻辑，必须先停止并向用户申请权限。
@@ -86,6 +96,12 @@
 - [ ] New hero tags are non-interactive visual labels only and do not introduce
   new product functionality, navigation, filtering, backend calls, or fake
   external marketplace claims.
+- [ ] Hero tag content is selective: employee-view and current-results tags are
+  removed, while repository-scope tags remain visually balanced and
+  non-interactive.
+- [ ] The detail-panel version history is rendered as a more legible release
+  timeline with stronger hierarchy and a darker diff console treatment, without
+  changing version behavior or data flow.
 
 - [ ] 桌面端主要界面清晰呈现首屏、筛选区、列表区和详情区。
 - [ ] Header 首屏比上一版更有视觉重心，具备 terminal/code 风格的暗黑视觉冲击，同时仍保持内部工作台属性。

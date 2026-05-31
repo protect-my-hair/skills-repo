@@ -69,6 +69,16 @@ collected `SKILL.md` files, controlled Git sources, or version/audit history.
 Do not add new navigation buttons, filters, backend calls, or external
 marketplace claims just to make the hero look fuller.
 
+Hero tags do not need to mirror every available metric. When the hero starts to
+read like a dashboard status strip, remove lower-value pills and keep only the
+tags that communicate repository scope or trust signals cleanly.
+
+For detail sidebars, version history should prefer a release-timeline treatment
+over a plain stacked list when the content includes version number, changelog,
+publisher metadata, and a textual diff. Keep it visually dense and console-like,
+but do not change the underlying version or audit behavior just to support the
+presentation.
+
 Native form controls must follow the same dark console theme. In particular,
 all `select` controls need explicit dark styling for the closed control and the
 native option list where the browser allows it:

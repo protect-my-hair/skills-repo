@@ -32,4 +32,12 @@ describe("global CSS theme", () => {
     expect(css).toMatch(/select:focus-visible,[\s\S]*?\{[\s\S]*?border-color:\s*rgba\(34, 197, 94, 0\.76\);/);
     expect(css).toMatch(/select:disabled\s*\{[\s\S]*?color:\s*var\(--subtle\);/);
   });
+
+  test("renders version history as a timeline with a diff console", () => {
+    expect(css).toMatch(/\.version-card\s*\{[\s\S]*?grid-template-columns:\s*16px minmax\(0, 1fr\);/);
+    expect(css).toMatch(/\.version-card-node\s*\{[\s\S]*?border:\s*2px solid rgba\(56, 189, 248, 0\.4\);/);
+    expect(css).toMatch(/\.detail-pill\.positive\s*\{[\s\S]*?color:\s*var\(--green-strong\);/);
+    expect(css).toMatch(/\.diff-box-header\s*\{[\s\S]*?border-bottom:\s*1px solid rgba\(148, 163, 184, 0\.14\);/);
+    expect(css).toMatch(/\.diff-stat\.remove\s*\{[\s\S]*?color:\s*var\(--red\);/);
+  });
 });
