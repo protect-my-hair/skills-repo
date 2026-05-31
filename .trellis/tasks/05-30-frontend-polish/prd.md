@@ -24,6 +24,14 @@
 
 ## Requirements
 
+- Latest browser feedback: the hero content area must not feel empty after the
+  top-page redesign. Under the product name, add a compact project-description
+  treatment with oversized quote marks and a denser group of non-interactive
+  tags. Tags should reuse existing scope or derived counts, such as collected
+  SKILL.md files, current results, controlled Git sources, and version/audit
+  history. This remains visual polish only: no new routes, filters, buttons,
+  data fields, backend calls, or logout behavior.
+
 - 本轮追加要求使用项目内 `.codex/skills/ui-ux-pro-max` 作为设计指导来源，只做页面视觉设计美化。
 - 不得修改原后端代码；如果实施过程中发现必须修改后端/API/数据模型/服务逻辑，必须先停止并向用户申请权限。
 - 前端页面美化不得影响原有功能，不得新增功能、按钮、流程、接口、数据字段或新的用户操作路径。
@@ -39,6 +47,7 @@
 - 根据浏览器标注反馈，首屏 Header 需要比当前版本更有视觉冲击力：可参考用户上传的终端风格图，把 hero 区域纵向适当拉高，强化大标题、终端代码块、网格/扫描线/光效等视觉层级，但不新增功能模块或营销式说明文案。
 - 根据最新浏览器标注反馈，删除 Header 中的“刷新”模块。
 - 将 Header 的角色选择放到右上角，并按可扩展的水平按钮组设计；本轮先在同一行放置一个“登出”前端占位按钮，参考用户提供的按钮视觉。登出后端能力暂不实现，不接 API，不新增真实退出流程。
+- 根据最新浏览器标注反馈，顶部页面参考用户上传的 Skills Marketplace 图片重新设计为模块化结构：顶部细导航条承载品牌与右上角操作；中间居中 hero 展示产品名、内部仓库标识和现有统计；底部保留代码统计卡。借鉴参考图的模块划分、暗色终端质感、巨大背景字和胶囊信息，但不照搬其 Search / Creators / Occupations / Docs 等外部站点功能。
 - 页面中所有下拉框需要进一步统一重设计：闭合态、hover、focus、disabled、箭头、边框、背景、阴影要与 OLED 暗色控制台一致；展开选项在浏览器允许范围内保持暗色。
 
 ## Candidate Design Directions
@@ -63,6 +72,7 @@
 - 本任务的代码范围限定为前端展示层。禁止修改 `src/app/api/**`、后端服务/存储逻辑、数据模型和 seed 数据，除非用户另行批准。
 - 针对浏览器反馈继续沿用 `ui-ux-pro-max` 的 Dark Mode (OLED) + terminal/code visual hierarchy 方向：使用现有内容做更强的 hero 表达和控件质感，不新增业务数据、文案段落或用户流程。
 - “登出”只作为用户明确要求的前端占位按钮存在，不实现后端登出、会话清理、路由跳转或权限状态变化。
+- 顶部重设计允许调整 `SkillsConsole` 的 header DOM 结构和全局 CSS，但业务状态、筛选、列表、详情、编辑器、API 调用和后端代码保持不变。
 
 ## Open Questions
 
@@ -70,10 +80,18 @@
 
 ## Acceptance Criteria
 
+- [ ] Header hero includes a designed project-description element below the
+  product name and a denser tag group, so the central area no longer feels
+  empty while preserving the dark terminal marketplace style.
+- [ ] New hero tags are non-interactive visual labels only and do not introduce
+  new product functionality, navigation, filtering, backend calls, or fake
+  external marketplace claims.
+
 - [ ] 桌面端主要界面清晰呈现首屏、筛选区、列表区和详情区。
 - [ ] Header 首屏比上一版更有视觉重心，具备 terminal/code 风格的暗黑视觉冲击，同时仍保持内部工作台属性。
 - [ ] Header 中不再展示“刷新”模块。
 - [ ] Header 右上角展示角色选择和“登出”占位按钮，二者水平对齐，并为后续扩展同排按钮留下清晰样式。
+- [ ] Header 按参考图形成清晰的顶部导航条、居中 hero、信息胶囊/代码统计模块，视觉上比之前的左右分栏控制面板更聚焦。
 - [ ] 移动端无明显文字溢出、按钮遮挡、内容重叠或不可操作区域。
 - [ ] 员工视角可以完成搜索、筛选、查看详情、跟踪/升级版本。
 - [ ] 管理员视角可以完成新建、导入、编辑、批量上架/下架/归档和分类变更。

@@ -12,6 +12,8 @@ describe("UI copy", () => {
     expect(UI_COPY.stats.totalSkills).toBe("Skills 总数");
     expect(UI_COPY.filters.allStatuses).toBe("全部状态");
     expect(UI_COPY.actions.logout).toBe("登出");
+    expect(UI_COPY.header.description).toContain("Curated internal agent skills");
+    expect(UI_COPY.header.tags.collectedSkills).toBe("Collected SKILL.md files");
   });
 
   test("uses Chinese labels for statuses and demo roles", () => {

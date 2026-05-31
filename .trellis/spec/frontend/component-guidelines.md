@@ -59,8 +59,15 @@ one-off page colors for routine visual polish.
 When strengthening the first screen, keep it terminal-inspired rather than
 marketing-led: use the existing title, chips, and `const skills = ...` code
 card, with CSS-only grid/glow/scanline effects if needed. Header action modules
-such as role selection and refresh should stay as the existing controls and
-align as a compact control group instead of becoming new feature cards.
+such as role selection and logout placeholders should stay compact in the top
+navigation bar instead of becoming large feature cards.
+
+If browser feedback says the header hero feels too empty, fill the space with a
+concise product-description treatment and non-interactive tag pills. Tags should
+come from existing state or truthful product scope, such as current results,
+collected `SKILL.md` files, controlled Git sources, or version/audit history.
+Do not add new navigation buttons, filters, backend calls, or external
+marketplace claims just to make the hero look fuller.
 
 Native form controls must follow the same dark console theme. In particular,
 all `select` controls need explicit dark styling for the closed control and the

@@ -155,6 +155,19 @@ export function SkillsConsole() {
   );
   const tools = unique(skills.flatMap((skill) => skill.compatibleTools));
   const recentAuditLogs = snapshot?.auditLogs.slice(0, 5) ?? [];
+  const heroTags = [
+    { label: `${ROLE_LABELS[role]}视图` },
+    {
+      value: filteredSkills.length.toLocaleString("en-US"),
+      label: UI_COPY.header.tags.currentResults,
+    },
+    {
+      value: summary.total.toLocaleString("en-US"),
+      label: UI_COPY.header.tags.collectedSkills,
+    },
+    { label: UI_COPY.header.tags.controlledSources },
+    { label: UI_COPY.header.tags.versionAudit },
+  ];
 
   async function requestSnapshot(url: string, init: RequestInit) {
     setError("");
@@ -333,47 +346,61 @@ export function SkillsConsole() {
   return (
     <main className="console-shell">
       <header className="console-header">
-        <div className="header-copy">
-          <div className="header-chrome" aria-hidden="true">
-            <span />
-            <span />
-            <span />
+        <div className="header-topbar">
+          <div className="header-brand">
+            <span className="header-chrome" aria-hidden="true">
+              <span />
+              <span />
+              <span />
+            </span>
+            <span className="brand-path">~/skillsrepo</span>
+            <span className="brand-cursor" aria-hidden="true" />
           </div>
-          <div className="header-title-block">
-            <p className="eyebrow">{UI_COPY.header.eyebrow}</p>
-            <h1>{PRODUCT_NAME}</h1>
-            <div className="header-metrics" aria-label="当前视图概览">
-              <span>{ROLE_LABELS[role]}视图</span>
-              <span>
-                {UI_COPY.header.resultCount} {filteredSkills.length}
+          <div className="header-actions">
+            <label className="role-switch">
+              <ShieldCheck size={18} aria-hidden="true" />
+              <span>{UI_COPY.header.role}</span>
+              <select
+                value={role}
+                onChange={(event) => {
+                  setRole(event.target.value as ActorRole);
+                  setSelectedIds([]);
+                }}
+              >
+                <option value="employee">{ROLE_LABELS.employee}</option>
+                <option value="admin">{ROLE_LABELS.admin}</option>
+              </select>
+            </label>
+            <button className="icon-text-button auth-button" type="button">
+              <LogOut size={17} aria-hidden="true" />
+              {UI_COPY.actions.logout}
+            </button>
+          </div>
+        </div>
+        <div className="header-hero">
+          <span className="hero-watermark" aria-hidden="true">
+            SKILLS REPO
+          </span>
+          <div className="hero-kicker">
+            <span />
+            <span>{UI_COPY.header.eyebrow} / {PRODUCT_NAME}</span>
+          </div>
+          <h1>{PRODUCT_NAME}</h1>
+          <p className="hero-description">{UI_COPY.header.description}</p>
+          <div className="header-metrics hero-tags" aria-label="Hero highlights">
+            {heroTags.map((tag) => (
+              <span key={`${tag.value ?? ""}${tag.label}`}>
+                {tag.value ? <strong>{tag.value}</strong> : null}
+                {tag.value ? " " : null}
+                {tag.label}
               </span>
-            </div>
+            ))}
           </div>
           <div className="header-code" aria-label={UI_COPY.stats.totalSkills}>
             <span>const skills =</span>
             <strong>{summary.total}</strong>
             <span>;</span>
           </div>
-        </div>
-        <div className="header-actions">
-          <label className="role-switch">
-            <ShieldCheck size={18} aria-hidden="true" />
-            <span>{UI_COPY.header.role}</span>
-            <select
-              value={role}
-              onChange={(event) => {
-                setRole(event.target.value as ActorRole);
-                setSelectedIds([]);
-              }}
-            >
-              <option value="employee">{ROLE_LABELS.employee}</option>
-              <option value="admin">{ROLE_LABELS.admin}</option>
-            </select>
-          </label>
-          <button className="icon-text-button auth-button" type="button">
-            <LogOut size={17} aria-hidden="true" />
-            {UI_COPY.actions.logout}
-          </button>
         </div>
       </header>
 

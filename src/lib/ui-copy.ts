@@ -21,6 +21,14 @@ export const UI_COPY = {
     eyebrow: "内部仓库",
     role: "角色",
     resultCount: "当前结果",
+    description:
+      "Curated internal agent skills for discovery, review, version tracking, and governed reuse across teams.",
+    tags: {
+      currentResults: "Current results",
+      collectedSkills: "Collected SKILL.md files",
+      controlledSources: "Controlled Git sources",
+      versionAudit: "Version history & audit trail",
+    },
   },
   actions: {
     logout: "登出",

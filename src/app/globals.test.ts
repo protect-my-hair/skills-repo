@@ -12,10 +12,14 @@ describe("global CSS theme", () => {
   });
 
   test("keeps the terminal-inspired header visual treatment", () => {
-    expect(css).toMatch(/\.console-header\s*\{[\s\S]*?min-height:\s*352px;/);
-    expect(css).toMatch(/\.console-header::after\s*\{[\s\S]*?border:\s*1px solid rgba\(56, 189, 248, 0\.22\);/);
-    expect(css).toMatch(/\.console-header h1::before\s*\{[\s\S]*?content:\s*">";/);
-    expect(css).toMatch(/\.header-actions::before\s*\{[\s\S]*?radial-gradient/);
+    expect(css).toMatch(/\.console-header\s*\{[\s\S]*?grid-template-rows:\s*auto 1fr;/);
+    expect(css).toMatch(/\.console-header\s*\{[\s\S]*?min-height:\s*430px;/);
+    expect(css).toMatch(/\.header-topbar\s*\{[\s\S]*?border-bottom:\s*1px solid rgba\(148, 163, 184, 0\.2\);/);
+    expect(css).toMatch(/\.hero-watermark\s*\{[\s\S]*?font-size:\s*116px;/);
+    expect(css).toMatch(/\.hero-kicker\s*\{[\s\S]*?border-radius:\s*999px;/);
+    expect(css).toMatch(/\.hero-description\s*\{[\s\S]*?max-width:\s*820px;/);
+    expect(css).toMatch(/\.hero-description::before\s*\{[\s\S]*?content:\s*"“";/);
+    expect(css).toMatch(/\.hero-tags strong\s*\{[\s\S]*?color:\s*#f0a58d;/);
   });
 
   test("keeps native select controls aligned with the dark theme", () => {
