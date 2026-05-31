@@ -1,0 +1,21 @@
+node_modules/
+.next/
+out/
+
+# Local runtime data
+data/skills-store.json
+dev-server.log
+dev-server.err.log
+chrome-qa.*.log
+.chrome-qa*/
+qa-*.png
+*.tsbuildinfo
+
+# Local environment files
+.env*.local
+
+# Local AI/Trellis workspace metadata
+.agents/
+.codex/
+.claude/
+.cursor/

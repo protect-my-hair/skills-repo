@@ -1,0 +1,21 @@
+import type { Metadata } from "next";
+
+import "./globals.css";
+import { PRODUCT_NAME } from "@/lib/ui-copy";
+
+export const metadata: Metadata = {
+  title: PRODUCT_NAME,
+  description: "公司内部 Skills 管理平台 MVP",
+};
+
+export default function RootLayout({
+  children,
+}: Readonly<{
+  children: React.ReactNode;
+}>) {
+  return (
+    <html lang="zh-CN">
+      <body>{children}</body>
+    </html>
+  );
+}
