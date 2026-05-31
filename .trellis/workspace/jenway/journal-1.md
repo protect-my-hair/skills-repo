@@ -35,3 +35,37 @@ Finished and archived the first-phase Skills Repo MVP after user acceptance; ver
 ### Next Steps
 
 - None - task complete
+
+
+## Session 2: Frontend polish for skills repo
+
+**Date**: 2026-05-31
+**Task**: Frontend polish for skills repo
+**Branch**: `main`
+
+### Summary
+
+Completed the frontend-only UI polish pass for Skills Repo: refined the dark-mode header, redesigned dropdown-adjacent controls, tightened hero tags, and restyled the version history panel while keeping behavior unchanged.
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `9b0e6fc` | (see git log) |
+| `0783fbe` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
