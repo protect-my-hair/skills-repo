@@ -1,0 +1,5 @@
+{"file": ".trellis/spec/frontend/index.md", "reason": "Verify changed files remain inside the documented frontend boundary."}
+{"file": ".trellis/spec/frontend/component-guidelines.md", "reason": "Check pagination UI against component, accessibility, and ui-ux-pro-max OLED styling guidance."}
+{"file": ".trellis/spec/frontend/state-management.md", "reason": "Check pagination state ownership, reset behavior, and derived state stay local and clear."}
+{"file": ".trellis/spec/frontend/quality-guidelines.md", "reason": "Check tests and required verification commands for frontend changes."}
+{"file": ".trellis/spec/frontend/type-safety.md", "reason": "Check constants, props, and helper types follow project TypeScript conventions."}

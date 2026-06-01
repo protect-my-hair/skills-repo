@@ -1,0 +1,5 @@
+{"file": ".trellis/spec/frontend/index.md", "reason": "Frontend boundary and spec entry point for Skills dashboard work."}
+{"file": ".trellis/spec/frontend/component-guidelines.md", "reason": "Component, styling, dark theme, ui-ux-pro-max OLED guidance, and accessibility rules for frontend UI changes."}
+{"file": ".trellis/spec/frontend/state-management.md", "reason": "Local UI state and derived state rules for dashboard pagination state."}
+{"file": ".trellis/spec/frontend/quality-guidelines.md", "reason": "Verification commands, dependency constraints, and frontend testing expectations."}
+{"file": ".trellis/spec/frontend/type-safety.md", "reason": "TypeScript naming and shared domain contract expectations for UI changes."}

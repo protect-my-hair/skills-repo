@@ -79,6 +79,14 @@ export const UI_COPY = {
     gridView: "网格视图",
     tableView: "表格视图",
   },
+  pagination: {
+    range: "{start}-{end} / {total}",
+    first: "首页",
+    previous: "上一页",
+    next: "下一页",
+    last: "末页",
+    page: "第 {page} 页",
+  },
   admin: {
     console: "后台操作",
     employeeConsole: "个人发布操作",

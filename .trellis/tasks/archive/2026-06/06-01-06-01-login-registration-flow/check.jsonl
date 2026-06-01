@@ -1,0 +1,9 @@
+{"file": ".trellis/spec/backend/index.md", "reason": "Backend entrypoint for checking Auth.js, API, and persistence changes"}
+{"file": ".trellis/spec/backend/database-guidelines.md", "reason": "Check Prisma/PostgreSQL migration and credential storage safety"}
+{"file": ".trellis/spec/backend/error-handling.md", "reason": "Check registration error envelope and sensitive data handling"}
+{"file": ".trellis/spec/backend/quality-guidelines.md", "reason": "Check backend tests and verification completeness"}
+{"file": ".trellis/spec/backend/api-contracts.md", "reason": "Check session-aware auth contract and RBAC boundaries"}
+{"file": ".trellis/spec/frontend/index.md", "reason": "Frontend entrypoint for checking Next.js and React UI changes"}
+{"file": ".trellis/spec/frontend/component-guidelines.md", "reason": "Check ui-ux-pro-max visual implementation and accessibility"}
+{"file": ".trellis/spec/frontend/quality-guidelines.md", "reason": "Check frontend tests and verification completeness"}
+{"file": ".trellis/spec/frontend/type-safety.md", "reason": "Check frontend runtime boundaries and type safety"}

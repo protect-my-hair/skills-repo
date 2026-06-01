@@ -40,4 +40,23 @@ describe("global CSS theme", () => {
     expect(css).toMatch(/\.diff-box-header\s*\{[\s\S]*?border-bottom:\s*1px solid rgba\(148, 163, 184, 0\.14\);/);
     expect(css).toMatch(/\.diff-stat\.remove\s*\{[\s\S]*?color:\s*var\(--red\);/);
   });
+
+  test("styles dashboard pagination as a compact dark console control", () => {
+    expect(css).toMatch(/\.pagination-footer\s*\{[\s\S]*?display:\s*flex;/);
+    expect(css).toMatch(/\.pagination-summary\s*\{[\s\S]*?color:\s*var\(--muted\);/);
+    expect(css).toMatch(/\.pagination-controls\s*\{[\s\S]*?flex-wrap:\s*wrap;/);
+    expect(css).toMatch(/\.pagination-button\.active\s*\{[\s\S]*?background:\s*var\(--green-soft\);/);
+    expect(css).toMatch(/\.pagination-button:disabled\s*\{[\s\S]*?cursor:\s*not-allowed;/);
+  });
+
+  test("keeps login and registration aligned with ui-ux-pro-max", () => {
+    expect(css).toMatch(/\.auth-shell\s*\{[\s\S]*?var\(--bg\);/);
+    expect(css).toMatch(/\.auth-stage\s*\{[\s\S]*?grid-template-columns:\s*minmax\(0, 1\.05fr\) minmax\(340px, 440px\);/);
+    expect(css).toMatch(/\.auth-copy,[\s\S]*?\.auth-card\s*\{[\s\S]*?var\(--surface\);/);
+    expect(css).toMatch(/\.auth-kicker\s*\{[\s\S]*?var\(--green-soft\);/);
+    expect(css).toMatch(/\.auth-tabs button\.active\s*\{[\s\S]*?background:\s*var\(--green\);/);
+    expect(css).toMatch(/\.auth-field:focus-within div\s*\{[\s\S]*?border-color:\s*rgba\(34, 197, 94, 0\.76\);/);
+    expect(css).toMatch(/\.auth-submit\s*\{[\s\S]*?background:\s*var\(--green\);/);
+    expect(css).toMatch(/@media \(max-width:\s*860px\)\s*\{[\s\S]*?\.auth-stage\s*\{[\s\S]*?grid-template-columns:\s*1fr;/);
+  });
 });
