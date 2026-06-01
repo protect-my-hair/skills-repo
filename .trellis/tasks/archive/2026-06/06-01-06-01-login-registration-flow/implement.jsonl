@@ -1,0 +1,9 @@
+{"file": ".trellis/spec/backend/index.md", "reason": "Backend entrypoint for Auth.js, API, and persistence guidance"}
+{"file": ".trellis/spec/backend/error-handling.md", "reason": "Safe API error envelope guidance for registration failures"}
+{"file": ".trellis/spec/backend/database-guidelines.md", "reason": "Prisma/PostgreSQL migration and credential storage guidance"}
+{"file": ".trellis/spec/frontend/index.md", "reason": "Frontend entrypoint for Next.js and React UI guidance"}
+{"file": ".trellis/spec/backend/api-contracts.md", "reason": "Session-aware API and Auth.js contract guidance"}
+{"file": ".trellis/spec/frontend/component-guidelines.md", "reason": "ui-ux-pro-max component and styling guidance"}
+{"file": ".trellis/spec/frontend/type-safety.md", "reason": "Frontend boundary validation and type safety guidance"}
+{"file": ".trellis/spec/frontend/quality-guidelines.md", "reason": "Frontend tests and verification guidance"}
+{"file": ".trellis/spec/backend/quality-guidelines.md", "reason": "Backend tests and verification guidance"}
