@@ -40,4 +40,12 @@ describe("global CSS theme", () => {
     expect(css).toMatch(/\.diff-box-header\s*\{[\s\S]*?border-bottom:\s*1px solid rgba\(148, 163, 184, 0\.14\);/);
     expect(css).toMatch(/\.diff-stat\.remove\s*\{[\s\S]*?color:\s*var\(--red\);/);
   });
+
+  test("styles dashboard pagination as a compact dark console control", () => {
+    expect(css).toMatch(/\.pagination-footer\s*\{[\s\S]*?display:\s*flex;/);
+    expect(css).toMatch(/\.pagination-summary\s*\{[\s\S]*?color:\s*var\(--muted\);/);
+    expect(css).toMatch(/\.pagination-controls\s*\{[\s\S]*?flex-wrap:\s*wrap;/);
+    expect(css).toMatch(/\.pagination-button\.active\s*\{[\s\S]*?background:\s*var\(--green-soft\);/);
+    expect(css).toMatch(/\.pagination-button:disabled\s*\{[\s\S]*?cursor:\s*not-allowed;/);
+  });
 });

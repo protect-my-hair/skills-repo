@@ -3,6 +3,10 @@
 import {
   Archive,
   Ban,
+  ChevronLeft,
+  ChevronRight,
+  ChevronsLeft,
+  ChevronsRight,
   Code2,
   Columns3,
   CalendarDays,
@@ -34,6 +38,12 @@ import {
   type SkillStatus,
 } from "@/lib/domain";
 import { INTERNAL_AUTH_USERS } from "@/lib/internal-users";
+import {
+  GRID_PAGE_SIZE,
+  TABLE_PAGE_SIZE,
+  getVisiblePageNumbers,
+  paginateItems,
+} from "@/lib/pagination";
 import type { SkillsReadModel } from "@/lib/read-model";
 import type { GitImportInput, SkillDraftInput, UpdateSkillInput } from "@/lib/skill-service";
 import { PRODUCT_NAME, ROLE_LABELS, STATUS_LABELS, UI_COPY } from "@/lib/ui-copy";
@@ -87,6 +97,7 @@ export function SkillsConsole() {
   const [tool, setTool] = useState("all");
   const [versionState, setVersionState] = useState<VersionFilter>("all");
   const [viewMode, setViewMode] = useState<ViewMode>("grid");
+  const [currentPage, setCurrentPage] = useState(1);
   const [selectedSkillId, setSelectedSkillId] = useState<string | null>(null);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [editorMode, setEditorMode] = useState<EditorMode | null>(null);
@@ -112,6 +123,8 @@ export function SkillsConsole() {
       if (isMounted) {
         if (response.ok) {
           setSnapshot(data as SkillsReadModel);
+          setCurrentPage(1);
+          setSelectedIds([]);
           setError("");
         } else {
           setError((data as { error?: string }).error ?? UI_COPY.feedback.requestFailed);
@@ -157,7 +170,25 @@ export function SkillsConsole() {
   );
 
   const selectedSkill =
-    skills.find((skill) => skill.id === selectedSkillId) ?? filteredSkills[0] ?? null;
+    filteredSkills.find((skill) => skill.id === selectedSkillId) ?? filteredSkills[0] ?? null;
+  const pageSize = viewMode === "grid" ? GRID_PAGE_SIZE : TABLE_PAGE_SIZE;
+  const pagination = useMemo(
+    () =>
+      paginateItems(filteredSkills, {
+        currentPage,
+        pageSize,
+      }),
+    [currentPage, filteredSkills, pageSize],
+  );
+  const paginatedSkills = pagination.items;
+  const pageNumbers = useMemo(
+    () =>
+      getVisiblePageNumbers({
+        currentPage: pagination.currentPage,
+        totalPages: pagination.totalPages,
+      }),
+    [pagination.currentPage, pagination.totalPages],
+  );
   const summary = snapshot?.summary ?? getSkillSummary(skills);
   const categories = unique(skills.map((skill) => skill.category));
   const teamsAndSources = unique(
@@ -223,6 +254,17 @@ export function SkillsConsole() {
     await signOut({ redirect: false });
     setSnapshot(null);
     setSelectedIds([]);
+    setCurrentPage(1);
+  }
+
+  function resetListScope() {
+    setCurrentPage(1);
+    setSelectedIds([]);
+  }
+
+  function changeViewMode(nextViewMode: ViewMode) {
+    setViewMode(nextViewMode);
+    setCurrentPage(1);
   }
 
   function openCreateEditor() {
@@ -473,14 +515,23 @@ export function SkillsConsole() {
                 <Search size={18} aria-hidden="true" />
                 <input
                   value={query}
-                  onChange={(event) => setQuery(event.target.value)}
+                  onChange={(event) => {
+                    setQuery(event.target.value);
+                    resetListScope();
+                  }}
                   placeholder={UI_COPY.filters.searchPlaceholder}
                 />
               </div>
             </label>
             <label className="filter-field">
               <span>{UI_COPY.filters.category}</span>
-              <select value={category} onChange={(event) => setCategory(event.target.value)}>
+              <select
+                value={category}
+                onChange={(event) => {
+                  setCategory(event.target.value);
+                  resetListScope();
+                }}
+              >
                 <option value="all">{UI_COPY.filters.allCategories}</option>
                 {categories.map((item) => (
                   <option key={item} value={item}>
@@ -493,7 +544,10 @@ export function SkillsConsole() {
               <span>{UI_COPY.filters.status}</span>
               <select
                 value={status}
-                onChange={(event) => setStatus(event.target.value as SkillStatus | "all")}
+                onChange={(event) => {
+                  setStatus(event.target.value as SkillStatus | "all");
+                  resetListScope();
+                }}
               >
                 <option value="all">{UI_COPY.filters.allStatuses}</option>
                 {Object.entries(STATUS_LABELS).map(([value, label]) => (
@@ -505,7 +559,13 @@ export function SkillsConsole() {
             </label>
             <label className="filter-field">
               <span>{UI_COPY.filters.teamOrSource}</span>
-              <select value={teamOrSource} onChange={(event) => setTeamOrSource(event.target.value)}>
+              <select
+                value={teamOrSource}
+                onChange={(event) => {
+                  setTeamOrSource(event.target.value);
+                  resetListScope();
+                }}
+              >
                 <option value="all">{UI_COPY.filters.allTeamsOrSources}</option>
                 {teamsAndSources.map((item) => (
                   <option key={item} value={item}>
@@ -516,7 +576,13 @@ export function SkillsConsole() {
             </label>
             <label className="filter-field">
               <span>{UI_COPY.filters.tool}</span>
-              <select value={tool} onChange={(event) => setTool(event.target.value)}>
+              <select
+                value={tool}
+                onChange={(event) => {
+                  setTool(event.target.value);
+                  resetListScope();
+                }}
+              >
                 <option value="all">{UI_COPY.filters.allTools}</option>
                 {tools.map((item) => (
                   <option key={item} value={item}>
@@ -529,7 +595,10 @@ export function SkillsConsole() {
               <span>{UI_COPY.filters.versionState}</span>
               <select
                 value={versionState}
-                onChange={(event) => setVersionState(event.target.value as VersionFilter)}
+                onChange={(event) => {
+                  setVersionState(event.target.value as VersionFilter);
+                  resetListScope();
+                }}
               >
                 <option value="all">{UI_COPY.filters.allVersionStates}</option>
                 <option value="upgrade_available">{UI_COPY.filters.upgradeAvailable}</option>
@@ -544,7 +613,7 @@ export function SkillsConsole() {
                 className={viewMode === "grid" ? "active" : ""}
                 type="button"
                 title={UI_COPY.filters.gridView}
-                onClick={() => setViewMode("grid")}
+                onClick={() => changeViewMode("grid")}
               >
                 <LayoutGrid size={17} aria-hidden="true" />
               </button>
@@ -552,7 +621,7 @@ export function SkillsConsole() {
                 className={viewMode === "table" ? "active" : ""}
                 type="button"
                 title={UI_COPY.filters.tableView}
-                onClick={() => setViewMode("table")}
+                onClick={() => changeViewMode("table")}
               >
                 <Table2 size={17} aria-hidden="true" />
               </button>
@@ -625,7 +694,7 @@ export function SkillsConsole() {
 
           {viewMode === "grid" ? (
             <div className="skill-grid">
-              {filteredSkills.map((skill) => (
+              {paginatedSkills.map((skill) => (
                 <SkillCard
                   key={skill.id}
                   skill={skill}
@@ -644,7 +713,7 @@ export function SkillsConsole() {
             </div>
           ) : (
             <SkillTable
-              skills={filteredSkills}
+              skills={paginatedSkills}
               isAdmin={isAdmin}
               selectedIds={selectedIds}
               selectedSkillId={selectedSkill?.id ?? null}
@@ -654,6 +723,15 @@ export function SkillsConsole() {
               onToggleSelected={toggleSelected}
             />
           )}
+          <PaginationFooter
+            currentPage={pagination.currentPage}
+            endItem={pagination.endItem}
+            pageNumbers={pageNumbers}
+            startItem={pagination.startItem}
+            totalItems={pagination.totalItems}
+            totalPages={pagination.totalPages}
+            onPageChange={setCurrentPage}
+          />
         </div>
 
         <aside className="detail-panel">
@@ -701,6 +779,95 @@ export function SkillsConsole() {
         </div>
       ) : null}
     </main>
+  );
+}
+
+function PaginationFooter({
+  currentPage,
+  endItem,
+  pageNumbers,
+  startItem,
+  totalItems,
+  totalPages,
+  onPageChange,
+}: {
+  currentPage: number;
+  endItem: number;
+  pageNumbers: number[];
+  startItem: number;
+  totalItems: number;
+  totalPages: number;
+  onPageChange: (page: number) => void;
+}) {
+  if (totalItems === 0) {
+    return null;
+  }
+
+  const isFirstPage = currentPage === 1;
+  const isLastPage = currentPage === totalPages;
+  const rangeLabel = UI_COPY.pagination.range
+    .replace("{start}", startItem.toString())
+    .replace("{end}", endItem.toString())
+    .replace("{total}", totalItems.toString());
+
+  return (
+    <nav className="pagination-footer" aria-label="Skills pagination">
+      <span className="pagination-summary">{rangeLabel}</span>
+      <div className="pagination-controls">
+        <button
+          className="pagination-button"
+          type="button"
+          disabled={isFirstPage}
+          title={UI_COPY.pagination.first}
+          aria-label={UI_COPY.pagination.first}
+          onClick={() => onPageChange(1)}
+        >
+          <ChevronsLeft size={16} aria-hidden="true" />
+        </button>
+        <button
+          className="pagination-button"
+          type="button"
+          disabled={isFirstPage}
+          title={UI_COPY.pagination.previous}
+          aria-label={UI_COPY.pagination.previous}
+          onClick={() => onPageChange(currentPage - 1)}
+        >
+          <ChevronLeft size={16} aria-hidden="true" />
+        </button>
+        {pageNumbers.map((pageNumber) => (
+          <button
+            key={pageNumber}
+            className={`pagination-button ${pageNumber === currentPage ? "active" : ""}`}
+            type="button"
+            aria-current={pageNumber === currentPage ? "page" : undefined}
+            aria-label={UI_COPY.pagination.page.replace("{page}", pageNumber.toString())}
+            onClick={() => onPageChange(pageNumber)}
+          >
+            {pageNumber}
+          </button>
+        ))}
+        <button
+          className="pagination-button"
+          type="button"
+          disabled={isLastPage}
+          title={UI_COPY.pagination.next}
+          aria-label={UI_COPY.pagination.next}
+          onClick={() => onPageChange(currentPage + 1)}
+        >
+          <ChevronRight size={16} aria-hidden="true" />
+        </button>
+        <button
+          className="pagination-button"
+          type="button"
+          disabled={isLastPage}
+          title={UI_COPY.pagination.last}
+          aria-label={UI_COPY.pagination.last}
+          onClick={() => onPageChange(totalPages)}
+        >
+          <ChevronsRight size={16} aria-hidden="true" />
+        </button>
+      </div>
+    </nav>
   );
 }
 
