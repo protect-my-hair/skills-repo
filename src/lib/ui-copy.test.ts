@@ -11,6 +11,11 @@ describe("UI copy", () => {
     expect(UI_COPY.loading).toBe("正在加载 Skills Repo...");
     expect(UI_COPY.stats.totalSkills).toBe("Skills 总数");
     expect(UI_COPY.filters.allStatuses).toBe("全部状态");
+    expect(UI_COPY.pagination.range).toBe("{start}-{end} / {total}");
+    expect(UI_COPY.pagination.first).toBe("首页");
+    expect(UI_COPY.pagination.previous).toBe("上一页");
+    expect(UI_COPY.pagination.next).toBe("下一页");
+    expect(UI_COPY.pagination.last).toBe("末页");
     expect(UI_COPY.actions.logout).toBe("登出");
     expect(UI_COPY.header.description).toContain("Curated internal agent skills");
     expect(UI_COPY.header.tags.collectedSkills).toBe("Collected SKILL.md files");

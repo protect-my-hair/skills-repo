@@ -34,11 +34,13 @@ When frontend code exists, classify state before choosing a tool:
 
 Current examples:
 
-- Local UI state: filters, selected Skill, editor mode, preview mode.
+- Local UI state: filters, selected Skill, editor mode, preview mode,
+  dashboard current page, and admin selected ids.
 - Server state: permission-aware `SkillsReadModel` fetched from `/api/skills`
   with session credentials.
 - Derived state: filtered Skills and dashboard summary use `useMemo` and pure
-  helpers from `src/lib/domain.ts`.
+  helpers from `src/lib/domain.ts`. Dashboard pagination derives page slices
+  and visible page numbers through pure helpers in `src/lib/pagination.ts`.
 
 Auth/session state is owned by Auth.js via `SessionProvider` and `useSession`.
 Do not reintroduce local role switching as a source of truth.
