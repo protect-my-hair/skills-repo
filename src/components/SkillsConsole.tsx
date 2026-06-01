@@ -25,7 +25,7 @@ import {
   Upload,
   Users,
 } from "lucide-react";
-import { signIn, signOut, useSession } from "next-auth/react";
+import { signOut, useSession } from "next-auth/react";
 import { useEffect, useMemo, useState } from "react";
 
 import {
@@ -37,7 +37,6 @@ import {
   type Skill,
   type SkillStatus,
 } from "@/lib/domain";
-import { INTERNAL_AUTH_USERS } from "@/lib/internal-users";
 import {
   GRID_PAGE_SIZE,
   TABLE_PAGE_SIZE,
@@ -238,23 +237,11 @@ export function SkillsConsole() {
     }
   }
 
-  async function loginAs(email: string) {
-    setError("");
-    const result = await signIn("credentials", {
-      email,
-      redirect: false,
-    });
-
-    if (result?.error) {
-      setError(UI_COPY.feedback.requestFailed);
-    }
-  }
-
   async function logout() {
-    await signOut({ redirect: false });
     setSnapshot(null);
     setSelectedIds([]);
     setCurrentPage(1);
+    await signOut({ redirectTo: "/login" });
   }
 
   function resetListScope() {
@@ -400,35 +387,10 @@ export function SkillsConsole() {
     );
   }
 
-  if (authStatus === "loading") {
+  if (authStatus !== "authenticated") {
     return (
       <main className="console-shell">
         <section className="loading-panel">{UI_COPY.loading}</section>
-      </main>
-    );
-  }
-
-  if (authStatus === "unauthenticated") {
-    return (
-      <main className="console-shell">
-        <section className="loading-panel">
-          <h1>{PRODUCT_NAME}</h1>
-          <p>{UI_COPY.header.description}</p>
-          <div className="admin-actions">
-            {INTERNAL_AUTH_USERS.map((user) => (
-              <button
-                key={user.id}
-                className="icon-text-button"
-                type="button"
-                onClick={() => void loginAs(user.email)}
-              >
-                <ShieldCheck size={17} aria-hidden="true" />
-                {ROLE_LABELS[user.role]} · {user.name}
-              </button>
-            ))}
-          </div>
-          {error ? <div className="notice error">{error}</div> : null}
-        </section>
       </main>
     );
   }
@@ -457,7 +419,6 @@ export function SkillsConsole() {
           <div className="header-actions">
             <div className="role-switch">
               <ShieldCheck size={18} aria-hidden="true" />
-              <span>{UI_COPY.header.role}</span>
               <strong>{ROLE_LABELS[currentUser.role]}</strong>
               <small>{currentUser.name}</small>
             </div>
