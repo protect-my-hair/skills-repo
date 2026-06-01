@@ -687,6 +687,49 @@ textarea {
   margin-bottom: 14px;
 }
 
+.workspace-tabs {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 14px;
+  padding: 4px;
+  background: rgba(2, 6, 23, 0.5);
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  border-radius: var(--radius);
+}
+
+.workspace-tabs button {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 38px;
+  padding: 0 12px;
+  background: transparent;
+  border: 0;
+  border-radius: calc(var(--radius) - 2px);
+  color: var(--muted);
+  font-weight: 900;
+}
+
+.workspace-tabs button.active {
+  background:
+    linear-gradient(180deg, rgba(34, 197, 94, 0.2), rgba(34, 197, 94, 0.08)),
+    rgba(15, 23, 42, 0.88);
+  color: var(--green-strong);
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.22);
+}
+
+.workspace-tabs span {
+  min-width: 24px;
+  padding: 2px 7px;
+  background: rgba(56, 189, 248, 0.12);
+  border: 1px solid rgba(56, 189, 248, 0.22);
+  border-radius: 999px;
+  color: var(--blue);
+  font-family: Consolas, "Cascadia Mono", monospace;
+  font-size: 12px;
+}
+
 .panel-heading h2 {
   margin: 0;
   font-size: 18px;

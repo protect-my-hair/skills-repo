@@ -1,4 +1,4 @@
-import type { GitImportJobStatus, SkillStatus } from "./domain";
+import type { GitImportJobStatus, SkillStatus, SkillVisibility } from "./domain";
 
 const SKILL_STATUS_TO_DATABASE: Record<SkillStatus, string> = {
   draft: "DRAFT",
@@ -8,11 +8,18 @@ const SKILL_STATUS_TO_DATABASE: Record<SkillStatus, string> = {
   archived: "ARCHIVED",
 };
 
+const SKILL_VISIBILITY_TO_DATABASE: Record<SkillVisibility, string> = {
+  personal: "PERSONAL",
+  public: "PUBLIC",
+};
+
 const AUDIT_ACTION_TO_DATABASE: Record<string, string> = {
   create_draft: "CREATE_DRAFT",
   import_git: "IMPORT_GIT",
   edit: "EDIT",
   submit_review: "SUBMIT_REVIEW",
+  approve_review: "APPROVE_REVIEW",
+  reject_review: "REJECT_REVIEW",
   publish: "PUBLISH",
   unpublish: "UNPUBLISH",
   archive: "ARCHIVE",
@@ -36,6 +43,18 @@ export function skillStatusFromDatabase(status: string): SkillStatus {
   );
 
   return (match?.[0] ?? "draft") as SkillStatus;
+}
+
+export function skillVisibilityToDatabase(visibility: SkillVisibility): string {
+  return SKILL_VISIBILITY_TO_DATABASE[visibility];
+}
+
+export function skillVisibilityFromDatabase(visibility: string): SkillVisibility {
+  const match = Object.entries(SKILL_VISIBILITY_TO_DATABASE).find(
+    ([, databaseVisibility]) => databaseVisibility === visibility,
+  );
+
+  return (match?.[0] ?? "public") as SkillVisibility;
 }
 
 export function auditActionToDatabase(action: string): string {

@@ -31,6 +31,9 @@ const draftSkill: Skill = {
   tags: ["ops"],
   compatibleTools: ["Codex"],
   status: "draft",
+  visibility: "public",
+  ownerId: "admin-1",
+  ownerName: "Mira Admin",
   maintainingTeam: "Ops AI",
   source: "Manual",
   updatedAt: "2026-05-30T09:00:00.000Z",
@@ -52,16 +55,16 @@ const draftSkill: Skill = {
 };
 
 describe("skill service", () => {
-  test("blocks admin mutations for employee actors", () => {
+  test("hides restricted admin-governed Skills from employee transitions", () => {
     expect(() =>
       transitionSkill(draftSkill, "published", employee, {
         versionId: "version-1",
         now: "2026-05-30T10:00:00.000Z",
       }),
-    ).toThrow("Permission denied");
+    ).toThrow("Skill not found");
   });
 
-  test("maps admin authorization failures to a forbidden API error", () => {
+  test("maps restricted employee transitions to a not-found API error", () => {
     try {
       transitionSkill(draftSkill, "published", employee, {
         versionId: "version-1",
@@ -69,7 +72,7 @@ describe("skill service", () => {
       });
       throw new Error("Expected transition to fail");
     } catch (error) {
-      expect(toErrorPayload(error).status).toBe(403);
+      expect(toErrorPayload(error).status).toBe(404);
     }
   });
 
@@ -112,6 +115,134 @@ describe("skill service", () => {
     expect(result.skill.status).toBe("draft");
     expect(result.skill.source).toBe("Manual");
     expect(result.skill.versions[0]?.content).toContain("Follow the checklist");
+  });
+
+  test("lets employees create personal Skill drafts with ownership metadata", () => {
+    const result = createSkillDraft(
+      {
+        name: "Personal Runbook",
+        description: "A personal workflow before public review",
+        category: "Operations",
+        tags: ["personal"],
+        compatibleTools: ["Codex"],
+        maintainingTeam: "SRE",
+        maintainers: ["Eli Employee"],
+        installMethod: "Install from personal workspace after publication",
+        dependencies: [],
+        readme: "## Usage\nUse this before submitting for review.",
+        version: "0.1.0",
+        changelog: "Initial personal draft",
+      },
+      employee,
+      "2026-06-01T09:00:00.000Z",
+    );
+
+    expect(result.skill).toMatchObject({
+      status: "draft",
+      visibility: "personal",
+      ownerId: "employee-1",
+      ownerName: "Eli Employee",
+    });
+    expect(result.auditLog.action).toBe("create_draft");
+  });
+
+  test("lets employees publish, submit, and withdraw their own personal Skills", () => {
+    const created = createSkillDraft(
+      {
+        name: "Personal Release",
+        description: "Employee-owned Skill",
+        category: "Operations",
+        tags: ["personal"],
+        compatibleTools: ["Codex"],
+        maintainingTeam: "SRE",
+        maintainers: ["Eli Employee"],
+        installMethod: "Install from personal workspace after publication",
+        dependencies: [],
+        readme: "Personal instructions",
+        version: "0.1.0",
+        changelog: "Initial draft",
+      },
+      employee,
+      "2026-06-01T09:00:00.000Z",
+    ).skill;
+
+    const published = transitionSkill(created, "published", employee, {
+      versionId: "personal-release-0-1-0",
+      now: "2026-06-01T09:05:00.000Z",
+    }).skill;
+
+    expect(published.status).toBe("published");
+    expect(published.visibility).toBe("personal");
+    expect(published.currentVersionId).toBe("personal-release-0-1-0");
+
+    const submitted = transitionSkill(published, "pending_review", employee, {
+      now: "2026-06-01T09:10:00.000Z",
+    }).skill;
+
+    expect(submitted.status).toBe("pending_review");
+    expect(submitted.reviewSubmittedAt).toBe("2026-06-01T09:10:00.000Z");
+
+    const withdrawn = transitionSkill(submitted, "deprecated", employee, {
+      now: "2026-06-01T09:15:00.000Z",
+    }).skill;
+
+    expect(withdrawn.status).toBe("deprecated");
+    expect(withdrawn.visibility).toBe("personal");
+  });
+
+  test("blocks employees from managing another employee's personal Skills", () => {
+    const otherEmployeeSkill: Skill = {
+      ...draftSkill,
+      id: "other-personal-skill",
+      ownerId: "employee-2",
+      ownerName: "Other Employee",
+      visibility: "personal",
+    };
+
+    expect(() =>
+      transitionSkill(otherEmployeeSkill, "published", employee, {
+        versionId: "version-1",
+        now: "2026-06-01T09:30:00.000Z",
+      }),
+    ).toThrow("Skill not found");
+  });
+
+  test("lets admins approve or reject employee review submissions", () => {
+    const submitted: Skill = {
+      ...draftSkill,
+      status: "pending_review",
+      ownerId: "employee-1",
+      ownerName: "Eli Employee",
+      visibility: "personal",
+      reviewSubmittedAt: "2026-06-01T09:00:00.000Z",
+    };
+
+    const approved = transitionSkill(submitted, "published", admin, {
+      versionId: "version-1",
+      now: "2026-06-01T10:00:00.000Z",
+    });
+
+    expect(approved.skill).toMatchObject({
+      status: "published",
+      visibility: "public",
+      reviewReviewerName: "Mira Admin",
+      reviewReviewedAt: "2026-06-01T10:00:00.000Z",
+    });
+    expect(approved.auditLog.action).toBe("approve_review");
+
+    const rejected = transitionSkill(submitted, "draft", admin, {
+      now: "2026-06-01T10:30:00.000Z",
+      rejectionReason: "README needs clearer usage guidance",
+    });
+
+    expect(rejected.skill).toMatchObject({
+      status: "draft",
+      visibility: "personal",
+      reviewRejectionReason: "README needs clearer usage guidance",
+      reviewReviewerName: "Mira Admin",
+      reviewReviewedAt: "2026-06-01T10:30:00.000Z",
+    });
+    expect(rejected.auditLog.action).toBe("reject_review");
   });
 
   test("imports from a controlled Git source as a pending draft", () => {

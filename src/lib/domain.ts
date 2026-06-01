@@ -6,6 +6,7 @@ export type SkillStatus =
   | "archived";
 
 export type ActorRole = "employee" | "admin";
+export type SkillVisibility = "personal" | "public";
 
 export type VersionState = "current" | "upgrade_available" | "not_tracked";
 export type GitImportJobStatus = "queued" | "succeeded" | "failed";
@@ -40,6 +41,9 @@ export interface Skill {
   tags: string[];
   compatibleTools: string[];
   status: SkillStatus;
+  visibility: SkillVisibility;
+  ownerId: string;
+  ownerName: string;
   maintainingTeam: string;
   source: string;
   sourceMetadata?: SkillSourceMetadata;
@@ -50,6 +54,10 @@ export interface Skill {
   readme: string;
   currentVersionId: string | null;
   versions: SkillVersion[];
+  reviewSubmittedAt?: string;
+  reviewReviewerName?: string;
+  reviewReviewedAt?: string;
+  reviewRejectionReason?: string;
 }
 
 export interface TrackedVersion {

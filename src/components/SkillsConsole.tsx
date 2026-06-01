@@ -39,6 +39,7 @@ import type { GitImportInput, SkillDraftInput, UpdateSkillInput } from "@/lib/sk
 import { PRODUCT_NAME, ROLE_LABELS, STATUS_LABELS, UI_COPY } from "@/lib/ui-copy";
 
 type ViewMode = "grid" | "table";
+type WorkspaceMode = "repository" | "mine" | "review";
 type EditorMode = "create" | "edit" | "import";
 type PreviewMode = "edit" | "preview" | "split";
 type VersionFilter = "all" | "current" | "upgrade_available" | "not_tracked";
@@ -87,6 +88,7 @@ export function SkillsConsole() {
   const [tool, setTool] = useState("all");
   const [versionState, setVersionState] = useState<VersionFilter>("all");
   const [viewMode, setViewMode] = useState<ViewMode>("grid");
+  const [workspaceMode, setWorkspaceMode] = useState<WorkspaceMode>("repository");
   const [selectedSkillId, setSelectedSkillId] = useState<string | null>(null);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [editorMode, setEditorMode] = useState<EditorMode | null>(null);
@@ -128,8 +130,22 @@ export function SkillsConsole() {
     };
   }, [authStatus]);
 
-  const skills = snapshot?.skills ?? [];
-  const visibleSkills = skills;
+  const repositorySkills = snapshot?.skills ?? [];
+  const mySkills = snapshot?.mySkills ?? [];
+  const reviewQueue = snapshot?.reviewQueue ?? [];
+  const canReviewSkills = snapshot?.capabilities.canReviewSkills ?? false;
+  const canCreateSkills = snapshot?.capabilities.canCreateSkills ?? false;
+  const effectiveWorkspaceMode =
+    (isAdmin && workspaceMode === "mine") || (!canReviewSkills && workspaceMode === "review")
+      ? "repository"
+      : workspaceMode;
+  const activeSkills =
+    effectiveWorkspaceMode === "mine"
+      ? mySkills
+      : effectiveWorkspaceMode === "review"
+        ? reviewQueue
+        : repositorySkills;
+  const visibleSkills = activeSkills;
 
   const filteredSkills = useMemo(
     () =>
@@ -157,21 +173,29 @@ export function SkillsConsole() {
   );
 
   const selectedSkill =
-    skills.find((skill) => skill.id === selectedSkillId) ?? filteredSkills[0] ?? null;
-  const summary = snapshot?.summary ?? getSkillSummary(skills);
-  const categories = unique(skills.map((skill) => skill.category));
+    visibleSkills.find((skill) => skill.id === selectedSkillId) ?? filteredSkills[0] ?? null;
+  const summary = getSkillSummary(visibleSkills);
+  const categories = unique(visibleSkills.map((skill) => skill.category));
   const teamsAndSources = unique(
-    skills.flatMap((skill) => [skill.maintainingTeam, skill.source]),
+    visibleSkills.flatMap((skill) => [skill.maintainingTeam, skill.source]),
   );
-  const tools = unique(skills.flatMap((skill) => skill.compatibleTools));
+  const tools = unique(visibleSkills.flatMap((skill) => skill.compatibleTools));
   const recentAuditLogs = snapshot?.auditLogs.slice(0, 5) ?? [];
+  const canBulkManage = isAdmin && effectiveWorkspaceMode === "repository";
+  const canUseSkillEditor =
+    canCreateSkills &&
+    ((isAdmin && effectiveWorkspaceMode === "repository") ||
+      (!isAdmin && effectiveWorkspaceMode === "mine"));
   const heroTags = [
     {
       value: summary.total.toLocaleString("en-US"),
       label: UI_COPY.header.tags.collectedSkills,
     },
+    { value: mySkills.length.toLocaleString("en-US"), label: UI_COPY.workspaces.mine },
+    ...(canReviewSkills
+      ? [{ value: reviewQueue.length.toLocaleString("en-US"), label: UI_COPY.workspaces.review }]
+      : []),
     { label: UI_COPY.header.tags.controlledSources },
-    { label: UI_COPY.header.tags.versionAudit },
   ];
 
   async function requestSnapshot(url: string, init: RequestInit) {
@@ -306,12 +330,23 @@ export function SkillsConsole() {
     setEditorMode(null);
   }
 
-  async function transition(skill: Skill, targetStatus: SkillStatus) {
+  async function transition(skill: Skill, targetStatus: SkillStatus, rejectionReason?: string) {
     const versionId = skill.versions.at(-1)?.id;
     await requestSnapshot(`/api/skills/${skill.id}/transition`, {
       method: "POST",
-      body: JSON.stringify({ status: targetStatus, versionId }),
+      body: JSON.stringify({ status: targetStatus, versionId, rejectionReason }),
     });
+  }
+
+  async function rejectReview(skill: Skill) {
+    const rejectionReason = window.prompt(UI_COPY.review.rejectionPrompt)?.trim();
+
+    if (!rejectionReason) {
+      setError(UI_COPY.feedback.rejectionReasonRequired);
+      return;
+    }
+
+    await transition(skill, "draft", rejectionReason);
   }
 
   async function applyBulk(type: "publish" | "unpublish" | "archive") {
@@ -356,6 +391,12 @@ export function SkillsConsole() {
         ? current.filter((id) => id !== skillId)
         : [...current, skillId],
     );
+  }
+
+  function selectWorkspace(nextWorkspaceMode: WorkspaceMode) {
+    setWorkspaceMode(nextWorkspaceMode);
+    setSelectedIds([]);
+    setSelectedSkillId(null);
   }
 
   if (authStatus === "loading") {
@@ -458,9 +499,38 @@ export function SkillsConsole() {
 
       <section className="workspace">
         <div className="list-panel">
+          <div className="workspace-tabs" aria-label="Skill workspaces">
+            <button
+              className={effectiveWorkspaceMode === "repository" ? "active" : ""}
+              type="button"
+              onClick={() => selectWorkspace("repository")}
+            >
+              {UI_COPY.workspaces.repository}
+            </button>
+            {!isAdmin ? (
+              <button
+                className={effectiveWorkspaceMode === "mine" ? "active" : ""}
+                type="button"
+                onClick={() => selectWorkspace("mine")}
+              >
+                {UI_COPY.workspaces.mine}
+                <span>{mySkills.length}</span>
+              </button>
+            ) : null}
+            {canReviewSkills ? (
+              <button
+                className={effectiveWorkspaceMode === "review" ? "active" : ""}
+                type="button"
+                onClick={() => selectWorkspace("review")}
+              >
+                {UI_COPY.workspaces.review}
+                <span>{reviewQueue.length}</span>
+              </button>
+            ) : null}
+          </div>
           <div className="panel-heading">
             <div>
-              <h2>{UI_COPY.list.title}</h2>
+              <h2>{UI_COPY.workspaces[effectiveWorkspaceMode]}</h2>
               <p>
                 {filteredSkills.length} / {visibleSkills.length}
               </p>
@@ -560,61 +630,71 @@ export function SkillsConsole() {
             </div>
           </div>
 
-          {isAdmin ? (
+          {effectiveWorkspaceMode !== "review" && (canUseSkillEditor || canBulkManage) ? (
             <div className="admin-bar">
-              <span className="admin-bar-title">{UI_COPY.admin.console}</span>
+              <span className="admin-bar-title">
+                {canBulkManage ? UI_COPY.admin.console : UI_COPY.admin.employeeConsole}
+              </span>
               <div className="admin-actions">
-                <button className="icon-text-button" type="button" onClick={openCreateEditor}>
-                  <Plus size={17} aria-hidden="true" />
-                  {UI_COPY.actions.newSkill}
-                </button>
-                <button className="icon-text-button" type="button" onClick={openImportEditor}>
-                  <GitBranch size={17} aria-hidden="true" />
-                  {UI_COPY.actions.importGit}
-                </button>
-                <span className="selection-count">
-                  {selectedIds.length} {UI_COPY.admin.selected}
-                </span>
-                <button
-                  className="icon-text-button"
-                  type="button"
-                  disabled={selectedIds.length === 0}
-                  onClick={() => void runAction(() => applyBulk("publish"))}
-                >
-                  <Upload size={17} aria-hidden="true" />
-                  {UI_COPY.actions.publish}
-                </button>
-                <button
-                  className="icon-text-button"
-                  type="button"
-                  disabled={selectedIds.length === 0}
-                  onClick={() => void runAction(() => applyBulk("unpublish"))}
-                >
-                  <Ban size={17} aria-hidden="true" />
-                  {UI_COPY.actions.deprecate}
-                </button>
-                <button
-                  className="icon-text-button"
-                  type="button"
-                  disabled={selectedIds.length === 0}
-                  onClick={() => void runAction(() => applyBulk("archive"))}
-                >
-                  <Archive size={17} aria-hidden="true" />
-                  {UI_COPY.actions.archive}
-                </button>
-                <label className="bulk-category">
-                  <span>{UI_COPY.admin.category}</span>
-                  <input value={bulkCategory} onChange={(event) => setBulkCategory(event.target.value)} />
-                </label>
-                <button
-                  className="icon-text-button"
-                  type="button"
-                  disabled={selectedIds.length === 0}
-                  onClick={() => void runAction(applyBulkCategory)}
-                >
-                  <Tag size={17} aria-hidden="true" />
-                  {UI_COPY.actions.apply}
-                </button>
+                {canUseSkillEditor ? (
+                  <>
+                    <button className="icon-text-button" type="button" onClick={openCreateEditor}>
+                      <Plus size={17} aria-hidden="true" />
+                      {UI_COPY.actions.newSkill}
+                    </button>
+                    <button className="icon-text-button" type="button" onClick={openImportEditor}>
+                      <GitBranch size={17} aria-hidden="true" />
+                      {UI_COPY.actions.importGit}
+                    </button>
+                  </>
+                ) : null}
+                {canBulkManage ? (
+                  <>
+                    <span className="selection-count">
+                      {selectedIds.length} {UI_COPY.admin.selected}
+                    </span>
+                    <button
+                      className="icon-text-button"
+                      type="button"
+                      disabled={selectedIds.length === 0}
+                      onClick={() => void runAction(() => applyBulk("publish"))}
+                    >
+                      <Upload size={17} aria-hidden="true" />
+                      {UI_COPY.actions.publish}
+                    </button>
+                    <button
+                      className="icon-text-button"
+                      type="button"
+                      disabled={selectedIds.length === 0}
+                      onClick={() => void runAction(() => applyBulk("unpublish"))}
+                    >
+                      <Ban size={17} aria-hidden="true" />
+                      {UI_COPY.actions.deprecate}
+                    </button>
+                    <button
+                      className="icon-text-button"
+                      type="button"
+                      disabled={selectedIds.length === 0}
+                      onClick={() => void runAction(() => applyBulk("archive"))}
+                    >
+                      <Archive size={17} aria-hidden="true" />
+                      {UI_COPY.actions.archive}
+                    </button>
+                    <label className="bulk-category">
+                      <span>{UI_COPY.admin.category}</span>
+                      <input value={bulkCategory} onChange={(event) => setBulkCategory(event.target.value)} />
+                    </label>
+                    <button
+                      className="icon-text-button"
+                      type="button"
+                      disabled={selectedIds.length === 0}
+                      onClick={() => void runAction(applyBulkCategory)}
+                    >
+                      <Tag size={17} aria-hidden="true" />
+                      {UI_COPY.actions.apply}
+                    </button>
+                  </>
+                ) : null}
               </div>
             </div>
           ) : null}
@@ -629,7 +709,7 @@ export function SkillsConsole() {
                 <SkillCard
                   key={skill.id}
                   skill={skill}
-                  isAdmin={isAdmin}
+                  isAdmin={canBulkManage}
                   isSelected={selectedIds.includes(skill.id)}
                   isActive={selectedSkill?.id === skill.id}
                   versionState={getVersionState(
@@ -645,7 +725,7 @@ export function SkillsConsole() {
           ) : (
             <SkillTable
               skills={filteredSkills}
-              isAdmin={isAdmin}
+              isAdmin={canBulkManage}
               selectedIds={selectedIds}
               selectedSkillId={selectedSkill?.id ?? null}
               trackedVersions={snapshot.trackedVersions}
@@ -662,12 +742,15 @@ export function SkillsConsole() {
               skill={selectedSkill}
               auditLogs={recentAuditLogs}
               isAdmin={isAdmin}
+              workspaceMode={effectiveWorkspaceMode}
+              currentUserId={userId}
               versionState={getVersionState(selectedSkill, snapshot.trackedVersions, userId)}
               onEdit={() => openEditEditor(selectedSkill)}
               onTrack={() => void runAction(() => trackCurrentVersion(selectedSkill))}
               onTransition={(targetStatus) =>
                 void runAction(() => transition(selectedSkill, targetStatus))
               }
+              onReject={() => void runAction(() => rejectReview(selectedSkill))}
             />
           ) : (
             <div className="empty-state">{UI_COPY.detail.noMatches}</div>
@@ -681,7 +764,7 @@ export function SkillsConsole() {
             <div className="editor-header">
               <div>
                 <p className="eyebrow">
-                  {editorMode === "import" ? UI_COPY.editor.controlledGit : UI_COPY.editor.adminEditor}
+                  {editorMode === "import" ? UI_COPY.editor.controlledGit : UI_COPY.editor.skillEditor}
                 </p>
                 <h2>{editorTitle(editorMode)}</h2>
               </div>
@@ -887,22 +970,31 @@ function SkillDetail({
   skill,
   auditLogs,
   isAdmin,
+  workspaceMode,
+  currentUserId,
   versionState,
   onEdit,
   onTrack,
   onTransition,
+  onReject,
 }: {
   skill: Skill;
   auditLogs: AuditLog[];
   isAdmin: boolean;
+  workspaceMode: WorkspaceMode;
+  currentUserId: string;
   versionState: ReturnType<typeof getVersionState>;
   onEdit: () => void;
   onTrack: () => void;
   onTransition: (status: SkillStatus) => void;
+  onReject: () => void;
 }) {
   const currentVersion = getCurrentVersion(skill);
   const latestVersion = skill.versions.at(-1);
   const publishedVersionCount = skill.versions.filter((version) => version.publishedAt).length;
+  const isOwner = skill.ownerId === currentUserId && skill.visibility === "personal";
+  const isReviewMode = workspaceMode === "review" && isAdmin;
+  const canEditPersonalSkill = isOwner && workspaceMode === "mine";
 
   return (
     <>
@@ -915,7 +1007,18 @@ function SkillDetail({
       </div>
       <p className="detail-description">{skill.description}</p>
       <div className="detail-actions">
-        {isAdmin ? (
+        {isReviewMode ? (
+          <>
+            <button className="icon-text-button strong" type="button" onClick={() => onTransition("published")}>
+              <Upload size={17} aria-hidden="true" />
+              {UI_COPY.actions.approve}
+            </button>
+            <button className="icon-text-button" type="button" onClick={onReject}>
+              <Ban size={17} aria-hidden="true" />
+              {UI_COPY.actions.reject}
+            </button>
+          </>
+        ) : isAdmin ? (
           <>
             <button className="icon-text-button" type="button" onClick={onEdit}>
               <Pencil size={17} aria-hidden="true" />
@@ -932,6 +1035,40 @@ function SkillDetail({
             <button className="icon-text-button" type="button" onClick={() => onTransition("archived")}>
               <Archive size={17} aria-hidden="true" />
               {UI_COPY.actions.archive}
+            </button>
+          </>
+        ) : canEditPersonalSkill ? (
+          <>
+            <button className="icon-text-button" type="button" onClick={onEdit}>
+              <Pencil size={17} aria-hidden="true" />
+              {UI_COPY.actions.edit}
+            </button>
+            <button
+              className="icon-text-button strong"
+              type="button"
+              disabled={skill.status === "pending_review"}
+              onClick={() => onTransition("published")}
+            >
+              <Upload size={17} aria-hidden="true" />
+              {UI_COPY.actions.publish}
+            </button>
+            <button
+              className="icon-text-button"
+              type="button"
+              disabled={skill.status !== "published"}
+              onClick={() => onTransition("pending_review")}
+            >
+              <ShieldCheck size={17} aria-hidden="true" />
+              {UI_COPY.actions.submitReview}
+            </button>
+            <button
+              className="icon-text-button"
+              type="button"
+              disabled={skill.status === "draft" || skill.status === "archived"}
+              onClick={() => onTransition("deprecated")}
+            >
+              <Ban size={17} aria-hidden="true" />
+              {UI_COPY.actions.deprecate}
             </button>
           </>
         ) : (
@@ -980,6 +1117,14 @@ function SkillDetail({
             <dd>{skill.maintainers.join(", ")}</dd>
           </div>
           <div>
+            <dt>{UI_COPY.detail.owner}</dt>
+            <dd>{skill.ownerName}</dd>
+          </div>
+          <div>
+            <dt>{UI_COPY.detail.visibility}</dt>
+            <dd>{UI_COPY.visibility[skill.visibility]}</dd>
+          </div>
+          <div>
             <dt>{UI_COPY.detail.installMethod}</dt>
             <dd>{skill.installMethod}</dd>
           </div>
@@ -989,6 +1134,32 @@ function SkillDetail({
           </div>
         </dl>
       </section>
+
+      {skill.reviewSubmittedAt || skill.reviewRejectionReason ? (
+        <section className="detail-section">
+          <h3>{UI_COPY.detail.reviewState}</h3>
+          <dl className="info-list">
+            {skill.reviewSubmittedAt ? (
+              <div>
+                <dt>{STATUS_LABELS.pending_review}</dt>
+                <dd>{formatDate(skill.reviewSubmittedAt)}</dd>
+              </div>
+            ) : null}
+            {skill.reviewReviewerName ? (
+              <div>
+                <dt>{UI_COPY.detail.by}</dt>
+                <dd>{skill.reviewReviewerName}</dd>
+              </div>
+            ) : null}
+            {skill.reviewRejectionReason ? (
+              <div>
+                <dt>{UI_COPY.detail.rejectionReason}</dt>
+                <dd>{skill.reviewRejectionReason}</dd>
+              </div>
+            ) : null}
+          </dl>
+        </section>
+      ) : null}
 
       <section className="detail-section">
         <h3>{UI_COPY.detail.readme}</h3>

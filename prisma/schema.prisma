@@ -22,11 +22,18 @@ enum SkillStatus {
   ARCHIVED
 }
 
+enum SkillVisibility {
+  PERSONAL
+  PUBLIC
+}
+
 enum AuditAction {
   CREATE_DRAFT
   IMPORT_GIT
   EDIT
   SUBMIT_REVIEW
+  APPROVE_REVIEW
+  REJECT_REVIEW
   PUBLISH
   UNPUBLISH
   ARCHIVE
@@ -99,6 +106,9 @@ model Skill {
   tags              String[]
   compatibleTools   String[]
   status            SkillStatus        @default(DRAFT)
+  visibility        SkillVisibility    @default(PUBLIC)
+  ownerId           String             @default("admin-1")
+  ownerName         String             @default("Mira Admin")
   maintainingTeam   String
   source            String
   repositoryUrl     String?
@@ -109,6 +119,10 @@ model Skill {
   dependencies      String[]
   readme            String
   currentVersionId  String?
+  reviewSubmittedAt DateTime?
+  reviewReviewerName String?
+  reviewReviewedAt  DateTime?
+  reviewRejectionReason String?
   currentVersion    SkillVersion?      @relation("CurrentSkillVersion", fields: [currentVersionId], references: [id])
   versions          SkillVersion[]     @relation("SkillVersions")
   trackedVersions   TrackedVersion[]
@@ -117,6 +131,8 @@ model Skill {
 
   @@index([status])
   @@index([category])
+  @@index([visibility])
+  @@index([ownerId])
 }
 
 model SkillVersion {

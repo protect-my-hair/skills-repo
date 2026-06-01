@@ -58,6 +58,7 @@ export interface UpdateSkillInput {
 export interface TransitionOptions {
   versionId?: string;
   now: string;
+  rejectionReason?: string;
 }
 
 export type BulkAction =
@@ -104,7 +105,6 @@ export function createSkillDraft(
   actor: Actor,
   now: string,
 ): MutationResult {
-  requireAdmin(actor);
   validateDraftInput(input);
 
   const skillId = toId(input.name);
@@ -125,6 +125,9 @@ export function createSkillDraft(
     tags: normalizeList(input.tags ?? []),
     compatibleTools: normalizeList(input.compatibleTools),
     status: "draft",
+    visibility: actor.role === "admin" ? "public" : "personal",
+    ownerId: actor.id,
+    ownerName: actor.name,
     maintainingTeam: input.maintainingTeam.trim(),
     source: "Manual",
     updatedAt: now,
@@ -147,7 +150,6 @@ export function importSkillFromGit(
   actor: Actor,
   now: string,
 ): GitImportMutationResult {
-  requireAdmin(actor);
   validateControlledGitInput(input);
 
   const result = createSkillDraft(
@@ -194,7 +196,7 @@ export function updateSkillContent(
   actor: Actor,
   now: string,
 ): MutationResult {
-  requireAdmin(actor);
+  requireSkillManager(skill, actor);
   validateText(input.readme, "Content body");
   validateText(input.version, "Version number");
   validateText(input.changelog, "Changelog");
@@ -244,44 +246,15 @@ export function transitionSkill(
   actor: Actor,
   options: TransitionOptions,
 ): MutationResult {
-  requireAdmin(actor);
-
   if (!SKILL_STATUSES.includes(targetStatus)) {
     throw validationError("Unsupported status");
   }
 
-  if (targetStatus === "published" && !options.versionId) {
-    throw validationError("Publishing requires a version");
+  if (actor.role === "admin") {
+    return transitionAsAdmin(skill, targetStatus, actor, options);
   }
 
-  const nextVersions =
-    targetStatus === "published"
-      ? skill.versions.map((version) =>
-          version.id === options.versionId
-            ? {
-                ...version,
-                publishedAt: options.now,
-                publisher: actor.name,
-              }
-            : version,
-        )
-      : skill.versions;
-
-  const updatedSkill: Skill = {
-    ...skill,
-    status: targetStatus,
-    updatedAt: options.now,
-    currentVersionId:
-      targetStatus === "published"
-        ? options.versionId ?? skill.currentVersionId
-        : skill.currentVersionId,
-    versions: nextVersions,
-  };
-
-  return {
-    skill: updatedSkill,
-    auditLog: createAuditLog(actor, actionForStatus(targetStatus), updatedSkill, options.now),
-  };
+  return transitionAsEmployee(skill, targetStatus, actor, options);
 }
 
 export function applyBulkAction(
@@ -410,8 +383,185 @@ function validateControlledGitInput(input: GitImportInput): void {
 function canTrackSkill(actor: Actor, skill: Skill): boolean {
   return (
     actor.role === "admin" ||
-    skill.status === "published" ||
-    skill.status === "deprecated"
+    skill.ownerId === actor.id ||
+    ((skill.visibility ?? "public") === "public" &&
+      (skill.status === "published" || skill.status === "deprecated"))
+  );
+}
+
+function transitionAsAdmin(
+  skill: Skill,
+  targetStatus: SkillStatus,
+  actor: Actor,
+  options: TransitionOptions,
+): MutationResult {
+  if (isPersonalReviewApproval(skill, targetStatus)) {
+    const updatedSkill = publishSkillVersion(
+      {
+        ...skill,
+        visibility: "public",
+        reviewReviewerName: actor.name,
+        reviewReviewedAt: options.now,
+        reviewRejectionReason: undefined,
+      },
+      actor,
+      options,
+    );
+
+    return {
+      skill: updatedSkill,
+      auditLog: createAuditLog(actor, "approve_review", updatedSkill, options.now),
+    };
+  }
+
+  if (isPersonalReviewRejection(skill, targetStatus)) {
+    validateText(options.rejectionReason, "Rejection reason");
+    const updatedSkill: Skill = {
+      ...skill,
+      status: "draft",
+      visibility: "personal",
+      updatedAt: options.now,
+      reviewReviewerName: actor.name,
+      reviewReviewedAt: options.now,
+      reviewRejectionReason: options.rejectionReason?.trim(),
+    };
+
+    return {
+      skill: updatedSkill,
+      auditLog: createAuditLog(actor, "reject_review", updatedSkill, options.now),
+    };
+  }
+
+  const updatedSkill =
+    targetStatus === "published"
+      ? publishSkillVersion(skill, actor, options)
+      : {
+          ...skill,
+          status: targetStatus,
+          updatedAt: options.now,
+        };
+
+  return {
+    skill: updatedSkill,
+    auditLog: createAuditLog(actor, actionForStatus(targetStatus), updatedSkill, options.now),
+  };
+}
+
+function transitionAsEmployee(
+  skill: Skill,
+  targetStatus: SkillStatus,
+  actor: Actor,
+  options: TransitionOptions,
+): MutationResult {
+  requirePersonalOwner(skill, actor);
+
+  if (targetStatus === "published") {
+    const updatedSkill = publishSkillVersion(skill, actor, options);
+
+    return {
+      skill: updatedSkill,
+      auditLog: createAuditLog(actor, "publish", updatedSkill, options.now),
+    };
+  }
+
+  if (targetStatus === "pending_review") {
+    const updatedSkill: Skill = {
+      ...skill,
+      status: "pending_review",
+      updatedAt: options.now,
+      reviewSubmittedAt: options.now,
+      reviewReviewerName: undefined,
+      reviewReviewedAt: undefined,
+      reviewRejectionReason: undefined,
+    };
+
+    return {
+      skill: updatedSkill,
+      auditLog: createAuditLog(actor, "submit_review", updatedSkill, options.now),
+    };
+  }
+
+  if (targetStatus === "deprecated") {
+    const updatedSkill: Skill = {
+      ...skill,
+      status: "deprecated",
+      updatedAt: options.now,
+    };
+
+    return {
+      skill: updatedSkill,
+      auditLog: createAuditLog(actor, "unpublish", updatedSkill, options.now),
+    };
+  }
+
+  throw forbiddenError();
+}
+
+function publishSkillVersion(
+  skill: Skill,
+  actor: Actor,
+  options: TransitionOptions,
+): Skill {
+  if (!options.versionId) {
+    throw validationError("Publishing requires a version");
+  }
+
+  const nextVersions = skill.versions.map((version) =>
+    version.id === options.versionId
+      ? {
+          ...version,
+          publishedAt: options.now,
+          publisher: actor.name,
+        }
+      : version,
+  );
+
+  if (!nextVersions.some((version) => version.id === options.versionId)) {
+    throw notFoundError("Version");
+  }
+
+  return {
+    ...skill,
+    status: "published",
+    updatedAt: options.now,
+    currentVersionId: options.versionId,
+    versions: nextVersions,
+  };
+}
+
+function requireSkillManager(skill: Skill, actor: Actor): void {
+  if (actor.role === "admin") {
+    return;
+  }
+
+  requirePersonalOwner(skill, actor);
+}
+
+function requirePersonalOwner(skill: Skill, actor: Actor): void {
+  if (skill.ownerId !== actor.id || (skill.visibility ?? "public") !== "personal") {
+    throw notFoundError("Skill");
+  }
+}
+
+function isPersonalReviewApproval(
+  skill: Skill,
+  targetStatus: SkillStatus,
+): boolean {
+  return (
+    targetStatus === "published" &&
+    skill.status === "pending_review" &&
+    (skill.visibility ?? "public") === "personal"
+  );
+}
+
+function isPersonalReviewRejection(
+  skill: Skill,
+  targetStatus: SkillStatus,
+): boolean {
+  return (
+    targetStatus === "draft" &&
+    skill.status === "pending_review" &&
+    (skill.visibility ?? "public") === "personal"
   );
 }
 
