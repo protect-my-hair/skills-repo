@@ -60,10 +60,10 @@ cp .env.example .env.local
 
 ```env
 AUTH_SECRET=replace-with-a-local-secret
-SKILLS_REPO_ENABLE_INTERNAL_AUTH=true
+DATABASE_URL=postgresql://user:password@localhost:5432/skills_repo?schema=public
 ```
 
-如果只是本地体验，可以先不设置 `DATABASE_URL`。应用会使用 `data/skills-store.json` 作为本地 JSON fallback；该文件是运行时数据，不提交到 Git。
+登录、注册和会话需要 PostgreSQL/Prisma 支持。`data/skills-store.json` 仍可作为 Skills 数据的本地 JSON fallback；该文件是运行时数据，不提交到 Git。
 
 启动开发服务器：
 
@@ -73,16 +73,18 @@ npm run dev
 
 然后访问本地 Next.js 地址，默认通常是 `http://localhost:3000`。
 
-## 本地登录账号
+## 本地登录与注册
 
-启用 `SKILLS_REPO_ENABLE_INTERNAL_AUTH=true` 后，可以使用内置开发账号登录：
+`/login` 提供邮箱密码登录和注册。注册用户默认是 `employee` 角色。
 
-| 角色 | 邮箱 |
-| --- | --- |
-| 管理员 | `admin@skills.local` |
-| 员工 | `employee@skills.local` |
+如需使用 seeded admin / employee 账号登录本地数据库，请在运行 seed 前设置：
 
-当前 credentials provider 只校验邮箱，不需要密码。
+```env
+SKILLS_REPO_SEED_ADMIN_PASSWORD=your-local-admin-password
+SKILLS_REPO_SEED_EMPLOYEE_PASSWORD=your-local-employee-password
+```
+
+这些值只用于本地开发，不要提交真实密码。
 
 ## 数据库与 Prisma
 

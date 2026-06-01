@@ -5,13 +5,18 @@ import {
   AuditAction,
   ImportJobStatus,
   SkillStatus,
-  UserRole,
 } from "../src/generated/prisma/enums";
 import type {
   GitImportJobStatus as DomainGitImportJobStatus,
   SkillStatus as DomainSkillStatus,
 } from "../src/lib/domain";
+import { hashPassword } from "../src/lib/auth-credentials";
 import { INTERNAL_AUTH_USERS } from "../src/lib/internal-users";
+import {
+  collectSeedUsers,
+  seedUserIdForName,
+  type DatabaseUserSeed,
+} from "../src/lib/seed-users";
 import {
   auditActionToDatabase,
   importJobStatusToDatabase,
@@ -19,12 +24,10 @@ import {
 } from "../src/lib/prisma-mappers";
 import { seededStore } from "../src/lib/seed-data";
 
-interface DatabaseUserSeed {
-  id: string;
-  name: string;
-  email: string | null;
-  role: typeof UserRole[keyof typeof UserRole];
-}
+const SEED_PASSWORD_BY_USER_ID: Record<string, string | undefined> = {
+  "admin-1": process.env.SKILLS_REPO_SEED_ADMIN_PASSWORD,
+  "employee-1": process.env.SKILLS_REPO_SEED_EMPLOYEE_PASSWORD,
+};
 
 const connectionString = process.env.DATABASE_URL;
 
@@ -67,6 +70,30 @@ async function main(): Promise<void> {
         }),
       ),
     );
+
+    for (const user of users) {
+      const password = SEED_PASSWORD_BY_USER_ID[user.id];
+
+      if (password) {
+        const secret = await hashPassword(password);
+        await transaction.userPasswordCredential.upsert({
+          where: { userId: user.id },
+          create: {
+            userId: user.id,
+            passwordHash: secret.passwordHash,
+            passwordSalt: secret.passwordSalt,
+          },
+          update: {
+            passwordHash: secret.passwordHash,
+            passwordSalt: secret.passwordSalt,
+          },
+        });
+      } else {
+        await transaction.userPasswordCredential.deleteMany({
+          where: { userId: user.id },
+        });
+      }
+    }
 
     await Promise.all(
       seededStore.gitImportSources.map((source) =>
@@ -118,10 +145,10 @@ async function main(): Promise<void> {
               content: version.content,
               changelog: version.changelog,
               createdAt: new Date(version.createdAt),
-              authorId: userIdForName(version.author),
+              authorId: seedUserIdForName(version.author, INTERNAL_AUTH_USERS),
               publishedAt: version.publishedAt ? new Date(version.publishedAt) : null,
               publisherId: version.publisher
-                ? userIdForName(version.publisher)
+                ? seedUserIdForName(version.publisher, INTERNAL_AUTH_USERS)
                 : null,
             },
           }),
@@ -195,54 +222,15 @@ async function main(): Promise<void> {
 }
 
 function collectUsers(): DatabaseUserSeed[] {
-  const users = new Map<string, DatabaseUserSeed>();
-
-  for (const user of INTERNAL_AUTH_USERS) {
-    users.set(user.id, {
-      id: user.id,
-      name: user.name,
-      email: user.email,
-      role: user.role === "admin" ? UserRole.ADMIN : UserRole.EMPLOYEE,
-    });
-  }
-
-  for (const skill of seededStore.skills) {
-    for (const version of skill.versions) {
-      users.set(userIdForName(version.author), userSeedForName(version.author));
-
-      if (version.publisher) {
-        users.set(
-          userIdForName(version.publisher),
-          userSeedForName(version.publisher),
-        );
-      }
-    }
-  }
-
-  return [...users.values()];
-}
-
-function userSeedForName(name: string): DatabaseUserSeed {
-  return {
-    id: userIdForName(name),
-    name,
-    email: null,
-    role: UserRole.EMPLOYEE,
-  };
-}
-
-function userIdForName(name: string): string {
-  const internalUser = INTERNAL_AUTH_USERS.find((user) => user.name === name);
-
-  if (internalUser) {
-    return internalUser.id;
-  }
-
-  return `user-${name
-    .trim()
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-|-$/g, "")}`;
+  return collectSeedUsers({
+    internalUsers: INTERNAL_AUTH_USERS,
+    versionActors: seededStore.skills.flatMap((skill) =>
+      skill.versions.map((version) => ({
+        author: version.author,
+        publisher: version.publisher,
+      })),
+    ),
+  });
 }
 
 function toDatabaseSkillStatus(

@@ -3,42 +3,45 @@ import Credentials from "next-auth/providers/credentials";
 import { PrismaAdapter } from "@auth/prisma-adapter";
 
 import { isInternalAuthEnabled } from "@/lib/auth-config";
-import { getInternalUserByEmail } from "@/lib/internal-users";
 import { getPrismaClient } from "@/lib/prisma";
+import { verifyUserCredentials } from "@/lib/user-accounts";
 
 const isPrismaAdapterEnabled = Boolean(process.env.DATABASE_URL);
-const isInternalProviderEnabled = isInternalAuthEnabled();
+const isCredentialProviderEnabled =
+  isPrismaAdapterEnabled || isInternalAuthEnabled();
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
   adapter: isPrismaAdapterEnabled
     ? PrismaAdapter(getPrismaClient())
     : undefined,
+  pages: {
+    signIn: "/login",
+  },
   session: {
     strategy: "jwt",
   },
-  providers: isInternalProviderEnabled
+  providers: isCredentialProviderEnabled
     ? [
         Credentials({
           id: "credentials",
-          name: "Internal development account",
+          name: "Email and password",
           credentials: {
             email: { label: "Email", type: "email" },
+            password: { label: "Password", type: "password" },
           },
           async authorize(credentials) {
             const email =
               typeof credentials?.email === "string" ? credentials.email : "";
-            const user = getInternalUserByEmail(email);
+            const password =
+              typeof credentials?.password === "string"
+                ? credentials.password
+                : "";
 
-            if (!user) {
+            if (!email || !password || !isPrismaAdapterEnabled) {
               return null;
             }
 
-            return {
-              id: user.id,
-              name: user.name,
-              email: user.email,
-              role: user.role,
-            };
+            return verifyUserCredentials(email, password);
           },
         }),
       ]
