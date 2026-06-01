@@ -3,6 +3,7 @@ import {
   AuditAction,
   ImportJobStatus,
   SkillStatus,
+  SkillVisibility,
   UserRole,
 } from "@/generated/prisma/enums";
 
@@ -19,6 +20,8 @@ import {
   importJobStatusToDatabase,
   skillStatusFromDatabase,
   skillStatusToDatabase,
+  skillVisibilityFromDatabase,
+  skillVisibilityToDatabase,
 } from "./prisma-mappers";
 import { getPrismaClient } from "./prisma";
 import type { SkillStoreSnapshot } from "./seed-data";
@@ -110,6 +113,9 @@ async function readPrismaSnapshot(
       tags: skill.tags,
       compatibleTools: skill.compatibleTools,
       status: skillStatusFromDatabase(skill.status),
+      visibility: skillVisibilityFromDatabase(skill.visibility),
+      ownerId: skill.ownerId,
+      ownerName: skill.ownerName,
       maintainingTeam: skill.maintainingTeam,
       source: skill.source,
       sourceMetadata:
@@ -126,6 +132,10 @@ async function readPrismaSnapshot(
       readme: skill.readme,
       currentVersionId: skill.currentVersionId,
       versions: skill.versions.map(toDomainVersion),
+      reviewSubmittedAt: skill.reviewSubmittedAt?.toISOString(),
+      reviewReviewerName: skill.reviewReviewerName ?? undefined,
+      reviewReviewedAt: skill.reviewReviewedAt?.toISOString(),
+      reviewRejectionReason: skill.reviewRejectionReason ?? undefined,
     })),
     trackedVersions: trackedVersions.map((trackedVersion) => ({
       userId: trackedVersion.userId,
@@ -200,6 +210,9 @@ async function writePrismaSnapshot(
             tags: skill.tags,
             compatibleTools: skill.compatibleTools,
             status: skillStatusToDatabase(skill.status) as typeof SkillStatus[keyof typeof SkillStatus],
+            visibility: skillVisibilityToDatabase(skill.visibility) as typeof SkillVisibility[keyof typeof SkillVisibility],
+            ownerId: skill.ownerId,
+            ownerName: skill.ownerName,
             maintainingTeam: skill.maintainingTeam,
             source: skill.source,
             repositoryUrl: skill.sourceMetadata?.repositoryUrl,
@@ -209,6 +222,10 @@ async function writePrismaSnapshot(
             installMethod: skill.installMethod,
             dependencies: skill.dependencies,
             readme: skill.readme,
+            reviewSubmittedAt: skill.reviewSubmittedAt ? new Date(skill.reviewSubmittedAt) : null,
+            reviewReviewerName: skill.reviewReviewerName,
+            reviewReviewedAt: skill.reviewReviewedAt ? new Date(skill.reviewReviewedAt) : null,
+            reviewRejectionReason: skill.reviewRejectionReason,
           },
         }),
       ),

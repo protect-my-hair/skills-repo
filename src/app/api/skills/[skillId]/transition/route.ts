@@ -19,6 +19,7 @@ interface RouteParams {
 interface TransitionBody {
   status: SkillStatus;
   versionId?: string;
+  rejectionReason?: string;
 }
 
 export async function POST(request: Request, { params }: RouteParams) {
@@ -38,6 +39,7 @@ export async function POST(request: Request, { params }: RouteParams) {
       const result = transitionSkill(target, body.status, actor, {
         versionId: body.versionId,
         now,
+        rejectionReason: body.rejectionReason,
       });
 
       return {

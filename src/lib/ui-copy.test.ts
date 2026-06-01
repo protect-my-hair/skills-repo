@@ -17,13 +17,14 @@ describe("UI copy", () => {
     expect(UI_COPY.pagination.next).toBe("下一页");
     expect(UI_COPY.pagination.last).toBe("末页");
     expect(UI_COPY.actions.logout).toBe("登出");
-    expect(UI_COPY.header.description).toContain("Curated internal agent skills");
-    expect(UI_COPY.header.tags.collectedSkills).toBe("Collected SKILL.md files");
+    expect(UI_COPY.header.description).toContain("内部 Skills 控制台");
+    expect(UI_COPY.header.tags.collectedSkills).toBe("已收录 Skills");
+    expect(UI_COPY.workspaces.mine).toBe("我的发布");
   });
 
   test("uses Chinese labels for statuses and demo roles", () => {
     expect(STATUS_LABELS.pending_review).toBe("待审核");
-    expect(STATUS_LABELS.published).toBe("已上架");
+    expect(STATUS_LABELS.published).toBe("已发布");
     expect(ROLE_LABELS.employee).toBe("员工");
     expect(ROLE_LABELS.admin).toBe("管理员");
   });

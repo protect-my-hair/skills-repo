@@ -1,0 +1,5 @@
+{"file": ".trellis/spec/backend/index.md", "reason": "Backend API, service, persistence boundaries"}
+{"file": ".trellis/spec/backend/api-contracts.md", "reason": "Session-aware API and RBAC contracts"}
+{"file": ".trellis/spec/backend/database-guidelines.md", "reason": "Prisma schema and migration rules"}
+{"file": ".trellis/spec/frontend/index.md", "reason": "Frontend console boundary"}
+{"file": ".trellis/spec/frontend/component-guidelines.md", "reason": "Console UI and ui-ux-pro-max visual direction"}
