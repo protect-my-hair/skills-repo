@@ -21,6 +21,7 @@ import {
   Upload,
   Users,
 } from "lucide-react";
+import { signIn, signOut, useSession } from "next-auth/react";
 import { useEffect, useMemo, useState } from "react";
 
 import {
@@ -28,13 +29,13 @@ import {
   getCurrentVersion,
   getSkillSummary,
   getVersionState,
-  type ActorRole,
   type AuditLog,
   type Skill,
   type SkillStatus,
 } from "@/lib/domain";
+import { INTERNAL_AUTH_USERS } from "@/lib/internal-users";
+import type { SkillsReadModel } from "@/lib/read-model";
 import type { GitImportInput, SkillDraftInput, UpdateSkillInput } from "@/lib/skill-service";
-import type { SkillStoreSnapshot } from "@/lib/seed-data";
 import { PRODUCT_NAME, ROLE_LABELS, STATUS_LABELS, UI_COPY } from "@/lib/ui-copy";
 
 type ViewMode = "grid" | "table";
@@ -77,8 +78,8 @@ const EMPTY_FORM: SkillFormState = {
 };
 
 export function SkillsConsole() {
-  const [snapshot, setSnapshot] = useState<SkillStoreSnapshot | null>(null);
-  const [role, setRole] = useState<ActorRole>("employee");
+  const { status: authStatus } = useSession();
+  const [snapshot, setSnapshot] = useState<SkillsReadModel | null>(null);
   const [query, setQuery] = useState("");
   const [category, setCategory] = useState("all");
   const [status, setStatus] = useState<SkillStatus | "all">("all");
@@ -94,36 +95,45 @@ export function SkillsConsole() {
   const [bulkCategory, setBulkCategory] = useState("平台");
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
-  const userId = role === "admin" ? "admin-1" : "employee-1";
-  const isAdmin = role === "admin";
+  const currentUser = snapshot?.currentUser ?? null;
+  const userId = currentUser?.id ?? "";
+  const isAdmin = snapshot?.capabilities.canManageSkills ?? false;
 
   useEffect(() => {
     let isMounted = true;
 
     async function loadInitialSnapshot() {
-      const response = await fetch("/api/skills", { method: "GET" });
-      const data = (await response.json()) as SkillStoreSnapshot;
+      const response = await fetch("/api/skills", {
+        method: "GET",
+        credentials: "same-origin",
+      });
+      const data = (await response.json()) as SkillsReadModel | { error?: string };
 
       if (isMounted) {
-        setSnapshot(data);
+        if (response.ok) {
+          setSnapshot(data as SkillsReadModel);
+          setError("");
+        } else {
+          setError((data as { error?: string }).error ?? UI_COPY.feedback.requestFailed);
+        }
       }
     }
 
-    void loadInitialSnapshot();
+    if (authStatus === "authenticated") {
+      void loadInitialSnapshot();
+    }
 
     return () => {
       isMounted = false;
     };
-  }, []);
+  }, [authStatus]);
 
   const skills = snapshot?.skills ?? [];
-  const employeeVisibleSkills = isAdmin
-    ? skills
-    : skills.filter((skill) => ["published", "deprecated"].includes(skill.status));
+  const visibleSkills = skills;
 
   const filteredSkills = useMemo(
     () =>
-      filterSkills(employeeVisibleSkills, {
+      filterSkills(visibleSkills, {
         query,
         category: category === "all" ? undefined : category,
         status,
@@ -135,7 +145,7 @@ export function SkillsConsole() {
       }),
     [
       category,
-      employeeVisibleSkills,
+      visibleSkills,
       query,
       snapshot?.trackedVersions,
       status,
@@ -148,7 +158,7 @@ export function SkillsConsole() {
 
   const selectedSkill =
     skills.find((skill) => skill.id === selectedSkillId) ?? filteredSkills[0] ?? null;
-  const summary = getSkillSummary(skills);
+  const summary = snapshot?.summary ?? getSkillSummary(skills);
   const categories = unique(skills.map((skill) => skill.category));
   const teamsAndSources = unique(
     skills.flatMap((skill) => [skill.maintainingTeam, skill.source]),
@@ -168,14 +178,14 @@ export function SkillsConsole() {
     setError("");
     const response = await fetch(url, {
       ...init,
+      credentials: "same-origin",
       headers: {
         "content-type": "application/json",
-        "x-demo-role": role,
         ...(init.headers ?? {}),
       },
     });
     const data = (await response.json()) as
-      | (SkillStoreSnapshot & { selectedSkillId?: string })
+      | (SkillsReadModel & { selectedSkillId?: string })
       | { error?: string };
 
     if (!response.ok) {
@@ -183,7 +193,7 @@ export function SkillsConsole() {
       throw new Error(apiError.error ?? UI_COPY.feedback.requestFailed);
     }
 
-    const snapshotData = data as SkillStoreSnapshot & { selectedSkillId?: string };
+    const snapshotData = data as SkillsReadModel & { selectedSkillId?: string };
     setSnapshot(snapshotData);
     setSelectedSkillId(snapshotData.selectedSkillId ?? selectedSkillId);
     setMessage(UI_COPY.feedback.saved);
@@ -195,6 +205,24 @@ export function SkillsConsole() {
     } catch (actionError) {
       setError(actionError instanceof Error ? actionError.message : UI_COPY.feedback.actionFailed);
     }
+  }
+
+  async function loginAs(email: string) {
+    setError("");
+    const result = await signIn("credentials", {
+      email,
+      redirect: false,
+    });
+
+    if (result?.error) {
+      setError(UI_COPY.feedback.requestFailed);
+    }
+  }
+
+  async function logout() {
+    await signOut({ redirect: false });
+    setSnapshot(null);
+    setSelectedIds([]);
   }
 
   function openCreateEditor() {
@@ -330,7 +358,40 @@ export function SkillsConsole() {
     );
   }
 
-  if (!snapshot) {
+  if (authStatus === "loading") {
+    return (
+      <main className="console-shell">
+        <section className="loading-panel">{UI_COPY.loading}</section>
+      </main>
+    );
+  }
+
+  if (authStatus === "unauthenticated") {
+    return (
+      <main className="console-shell">
+        <section className="loading-panel">
+          <h1>{PRODUCT_NAME}</h1>
+          <p>{UI_COPY.header.description}</p>
+          <div className="admin-actions">
+            {INTERNAL_AUTH_USERS.map((user) => (
+              <button
+                key={user.id}
+                className="icon-text-button"
+                type="button"
+                onClick={() => void loginAs(user.email)}
+              >
+                <ShieldCheck size={17} aria-hidden="true" />
+                {ROLE_LABELS[user.role]} · {user.name}
+              </button>
+            ))}
+          </div>
+          {error ? <div className="notice error">{error}</div> : null}
+        </section>
+      </main>
+    );
+  }
+
+  if (!snapshot || !currentUser) {
     return (
       <main className="console-shell">
         <section className="loading-panel">{UI_COPY.loading}</section>
@@ -352,21 +413,17 @@ export function SkillsConsole() {
             <span className="brand-cursor" aria-hidden="true" />
           </div>
           <div className="header-actions">
-            <label className="role-switch">
+            <div className="role-switch">
               <ShieldCheck size={18} aria-hidden="true" />
               <span>{UI_COPY.header.role}</span>
-              <select
-                value={role}
-                onChange={(event) => {
-                  setRole(event.target.value as ActorRole);
-                  setSelectedIds([]);
-                }}
-              >
-                <option value="employee">{ROLE_LABELS.employee}</option>
-                <option value="admin">{ROLE_LABELS.admin}</option>
-              </select>
-            </label>
-            <button className="icon-text-button auth-button" type="button">
+              <strong>{ROLE_LABELS[currentUser.role]}</strong>
+              <small>{currentUser.name}</small>
+            </div>
+            <button
+              className="icon-text-button auth-button"
+              type="button"
+              onClick={() => void logout()}
+            >
               <LogOut size={17} aria-hidden="true" />
               {UI_COPY.actions.logout}
             </button>
@@ -405,7 +462,7 @@ export function SkillsConsole() {
             <div>
               <h2>{UI_COPY.list.title}</h2>
               <p>
-                {filteredSkills.length} / {employeeVisibleSkills.length}
+                {filteredSkills.length} / {visibleSkills.length}
               </p>
             </div>
           </div>
@@ -764,7 +821,7 @@ function SkillTable({
   isAdmin: boolean;
   selectedIds: string[];
   selectedSkillId: string | null;
-  trackedVersions: SkillStoreSnapshot["trackedVersions"];
+  trackedVersions: SkillsReadModel["trackedVersions"];
   userId: string;
   onSelect: (skillId: string) => void;
   onToggleSelected: (skillId: string) => void;

@@ -1,0 +1,192 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum UserRole {
+  EMPLOYEE
+  ADMIN
+  MAINTAINER
+  REVIEWER
+}
+
+enum SkillStatus {
+  DRAFT
+  PENDING_REVIEW
+  PUBLISHED
+  DEPRECATED
+  ARCHIVED
+}
+
+enum AuditAction {
+  CREATE_DRAFT
+  IMPORT_GIT
+  EDIT
+  SUBMIT_REVIEW
+  PUBLISH
+  UNPUBLISH
+  ARCHIVE
+  CHANGE_CATEGORY
+  TRACK_VERSION
+}
+
+enum ImportJobStatus {
+  QUEUED
+  SUCCEEDED
+  FAILED
+}
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String?   @unique
+  emailVerified DateTime?
+  image         String?
+  role          UserRole  @default(EMPLOYEE)
+  accounts      Account[]
+  sessions      Session[]
+
+  authoredVersions  SkillVersion[]  @relation("VersionAuthor")
+  publishedVersions SkillVersion[]  @relation("VersionPublisher")
+  trackedVersions   TrackedVersion[]
+  auditLogs         AuditLog[]
+  importJobs        GitImportJob[]
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+model Skill {
+  id                String             @id
+  name              String
+  description       String
+  category          String
+  tags              String[]
+  compatibleTools   String[]
+  status            SkillStatus        @default(DRAFT)
+  maintainingTeam   String
+  source            String
+  repositoryUrl     String?
+  repositoryName    String?
+  updatedAt         DateTime           @updatedAt
+  maintainers       String[]
+  installMethod     String
+  dependencies      String[]
+  readme            String
+  currentVersionId  String?
+  currentVersion    SkillVersion?      @relation("CurrentSkillVersion", fields: [currentVersionId], references: [id])
+  versions          SkillVersion[]     @relation("SkillVersions")
+  trackedVersions   TrackedVersion[]
+  auditLogs         AuditLog[]
+  importJobs        GitImportJob[]
+
+  @@index([status])
+  @@index([category])
+}
+
+model SkillVersion {
+  id                  String           @id
+  skillId             String
+  version             String
+  content             String
+  changelog           String
+  createdAt           DateTime         @default(now())
+  authorId            String
+  publishedAt         DateTime?
+  publisherId         String?
+  skill               Skill            @relation("SkillVersions", fields: [skillId], references: [id], onDelete: Cascade)
+  currentForSkills    Skill[]          @relation("CurrentSkillVersion")
+  author              User             @relation("VersionAuthor", fields: [authorId], references: [id])
+  publisher           User?            @relation("VersionPublisher", fields: [publisherId], references: [id])
+  trackedVersions     TrackedVersion[]
+
+  @@unique([skillId, version])
+}
+
+model TrackedVersion {
+  id        String       @id @default(cuid())
+  userId    String
+  skillId   String
+  versionId String
+  user      User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  skill     Skill        @relation(fields: [skillId], references: [id], onDelete: Cascade)
+  version   SkillVersion @relation(fields: [versionId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, skillId])
+}
+
+model AuditLog {
+  id         String      @id @default(cuid())
+  actorId    String
+  action     AuditAction
+  targetId   String
+  targetName String
+  createdAt  DateTime    @default(now())
+  summary    String
+  metadata   Json?
+  actor      User        @relation(fields: [actorId], references: [id])
+  skill      Skill?      @relation(fields: [targetId], references: [id])
+
+  @@index([createdAt])
+  @@index([action])
+}
+
+model GitImportSource {
+  id            String         @id @default(cuid())
+  repositoryUrl String         @unique
+  repositoryName String
+  trustedHost   String
+  createdAt     DateTime       @default(now())
+  jobs          GitImportJob[]
+}
+
+model GitImportJob {
+  id          String          @id @default(cuid())
+  sourceId    String
+  skillId     String?
+  actorId     String
+  status      ImportJobStatus @default(QUEUED)
+  sourceRef   String?
+  sourceCommit String?
+  error       String?
+  createdAt   DateTime        @default(now())
+  completedAt DateTime?
+  source      GitImportSource @relation(fields: [sourceId], references: [id], onDelete: Cascade)
+  skill       Skill?          @relation(fields: [skillId], references: [id])
+  actor       User            @relation(fields: [actorId], references: [id])
+}

@@ -1,8 +1,10 @@
 import { NextResponse } from "next/server";
 
+import { notFoundError } from "@/lib/api-errors";
 import type { SkillStatus } from "@/lib/domain";
-import { errorResponse, getActorFromRequest } from "@/lib/http";
-import { updateStore } from "@/lib/store";
+import { errorResponse, getActorFromSession } from "@/lib/http";
+import { buildSkillsReadModel } from "@/lib/read-model";
+import { updateSkillsSnapshot } from "@/lib/skill-repository";
 import { transitionSkill } from "@/lib/skill-service";
 
 export const dynamic = "force-dynamic";
@@ -21,16 +23,16 @@ interface TransitionBody {
 
 export async function POST(request: Request, { params }: RouteParams) {
   try {
-    const actor = getActorFromRequest(request);
+    const actor = await getActorFromSession();
     const { skillId } = await params;
     const body = (await request.json()) as TransitionBody;
     const now = new Date().toISOString();
 
-    const snapshot = await updateStore((current) => {
+    const snapshot = await updateSkillsSnapshot((current) => {
       const target = current.skills.find((skill) => skill.id === skillId);
 
       if (!target) {
-        throw new Error("Skill not found");
+        throw notFoundError("Skill");
       }
 
       const result = transitionSkill(target, body.status, actor, {
@@ -47,7 +49,7 @@ export async function POST(request: Request, { params }: RouteParams) {
       };
     });
 
-    return NextResponse.json(snapshot);
+    return NextResponse.json(buildSkillsReadModel(snapshot, actor));
   } catch (error) {
     return errorResponse(error);
   }

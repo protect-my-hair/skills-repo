@@ -1,7 +1,9 @@
 import { NextResponse } from "next/server";
 
-import { errorResponse, getActorFromRequest } from "@/lib/http";
-import { updateStore } from "@/lib/store";
+import { errorResponse, getActorFromSession } from "@/lib/http";
+import { notFoundError } from "@/lib/api-errors";
+import { buildSkillsReadModel } from "@/lib/read-model";
+import { updateSkillsSnapshot } from "@/lib/skill-repository";
 import { updateSkillContent, type UpdateSkillInput } from "@/lib/skill-service";
 
 export const dynamic = "force-dynamic";
@@ -15,16 +17,16 @@ interface RouteParams {
 
 export async function PATCH(request: Request, { params }: RouteParams) {
   try {
-    const actor = getActorFromRequest(request);
+    const actor = await getActorFromSession();
     const { skillId } = await params;
     const input = (await request.json()) as UpdateSkillInput;
     const now = new Date().toISOString();
 
-    const snapshot = await updateStore((current) => {
+    const snapshot = await updateSkillsSnapshot((current) => {
       const target = current.skills.find((skill) => skill.id === skillId);
 
       if (!target) {
-        throw new Error("Skill not found");
+        throw notFoundError("Skill");
       }
 
       const result = updateSkillContent(target, input, actor, now);
@@ -38,7 +40,7 @@ export async function PATCH(request: Request, { params }: RouteParams) {
       };
     });
 
-    return NextResponse.json(snapshot);
+    return NextResponse.json(buildSkillsReadModel(snapshot, actor));
   } catch (error) {
     return errorResponse(error);
   }

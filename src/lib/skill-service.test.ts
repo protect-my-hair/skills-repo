@@ -4,9 +4,11 @@ import {
   applyBulkAction,
   createSkillDraft,
   importSkillFromGit,
+  trackSkillVersion,
   transitionSkill,
   updateSkillContent,
 } from "./skill-service";
+import { toErrorPayload } from "./api-errors";
 import type { Actor, Skill } from "./domain";
 
 const admin: Actor = {
@@ -56,7 +58,19 @@ describe("skill service", () => {
         versionId: "version-1",
         now: "2026-05-30T10:00:00.000Z",
       }),
-    ).toThrow("Admin role required");
+    ).toThrow("Permission denied");
+  });
+
+  test("maps admin authorization failures to a forbidden API error", () => {
+    try {
+      transitionSkill(draftSkill, "published", employee, {
+        versionId: "version-1",
+        now: "2026-05-30T10:00:00.000Z",
+      });
+      throw new Error("Expected transition to fail");
+    } catch (error) {
+      expect(toErrorPayload(error).status).toBe(403);
+    }
   });
 
   test("publishes a draft without deleting version history and writes an audit log", () => {
@@ -121,6 +135,17 @@ describe("skill service", () => {
     expect(result.skill.status).toBe("draft");
     expect(result.skill.source).toBe("Controlled Git");
     expect(result.skill.sourceMetadata?.repositoryUrl).toContain("git.company.local");
+    expect(result.importSource).toMatchObject({
+      repositoryUrl: "https://git.company.local/skills/rag-helper",
+      repositoryName: "rag-helper",
+      trustedHost: "git.company.local",
+    });
+    expect(result.importJob).toMatchObject({
+      actorId: "admin-1",
+      skillId: "imported-rag-helper",
+      status: "succeeded",
+      sourceId: result.importSource.id,
+    });
   });
 
   test("updates published Skill content by creating a new draft version", () => {
@@ -165,5 +190,57 @@ describe("skill service", () => {
       "Platform",
     ]);
     expect(result.auditLogs).toHaveLength(2);
+  });
+
+  test("tracks a visible version for the current actor and writes an audit log", () => {
+    const published = transitionSkill(draftSkill, "published", admin, {
+      versionId: "version-1",
+      now: "2026-05-30T10:00:00.000Z",
+    }).skill;
+
+    const result = trackSkillVersion(
+      [published],
+      [
+        {
+          userId: "employee-1",
+          skillId: "draft-skill",
+          versionId: "old-version",
+        },
+      ],
+      {
+        skillId: "draft-skill",
+        versionId: "version-1",
+      },
+      employee,
+      "2026-05-30T14:00:00.000Z",
+    );
+
+    expect(result.trackedVersions).toEqual([
+      {
+        userId: "employee-1",
+        skillId: "draft-skill",
+        versionId: "version-1",
+      },
+    ]);
+    expect(result.auditLog).toMatchObject({
+      actorId: "employee-1",
+      action: "track_version",
+      targetId: "draft-skill",
+    });
+  });
+
+  test("hides restricted skills when tracking versions", () => {
+    expect(() =>
+      trackSkillVersion(
+        [draftSkill],
+        [],
+        {
+          skillId: "draft-skill",
+          versionId: "version-1",
+        },
+        employee,
+        "2026-05-30T14:00:00.000Z",
+      ),
+    ).toThrow("Skill not found");
   });
 });

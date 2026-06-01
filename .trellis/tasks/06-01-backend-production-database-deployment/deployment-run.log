@@ -1,0 +1,47 @@
+﻿Database deployment run started 2026-06-01T13:59:02.0851573+08:00
+2026-06-01T13:59:36.5376486+08:00 START Prisma generate
+2026-06-01T13:59:37.8850629+08:00
+2026-06-01T13:59:37.8860618+08:00 > internal-skills-management-platform@0.1.0 prisma:generate
+2026-06-01T13:59:37.8890644+08:00 > prisma generate
+2026-06-01T13:59:37.8910627+08:00
+2026-06-01T13:59:37.8950638+08:00 Loaded Prisma config from prisma.config.ts.
+2026-06-01T13:59:37.8980632+08:00 System.Management.Automation.RemoteException
+2026-06-01T13:59:37.9000633+08:00 Prisma schema loaded from prisma\schema.prisma.
+2026-06-01T13:59:37.9030699+08:00
+2026-06-01T13:59:37.9040703+08:00 鉁?Generated Prisma Client (7.8.0) to .\src\generated\prisma in 73ms
+2026-06-01T13:59:37.9070787+08:00
+2026-06-01T13:59:37.9110840+08:00 PASS Prisma generate
+2026-06-01T13:59:37.9140831+08:00 START Prisma migrate deploy
+2026-06-01T13:59:39.3229424+08:00
+2026-06-01T13:59:39.3239381+08:00 > internal-skills-management-platform@0.1.0 prisma:deploy
+2026-06-01T13:59:39.3269422+08:00 > prisma migrate deploy
+2026-06-01T13:59:39.3290190+08:00
+2026-06-01T13:59:39.3310554+08:00 Loaded Prisma config from prisma.config.ts.
+2026-06-01T13:59:39.3330136+08:00 System.Management.Automation.RemoteException
+2026-06-01T13:59:39.3340168+08:00 Prisma schema loaded from prisma\schema.prisma.
+2026-06-01T13:59:39.3363382+08:00 Datasource "db": PostgreSQL database "[REDACTED_DATABASE]", schema "[REDACTED_SCHEMA]" at "[REDACTED_DATABASE_ENDPOINT]"
+2026-06-01T13:59:39.3373245+08:00
+2026-06-01T13:59:39.3393878+08:00 1 migration found in prisma/migrations
+2026-06-01T13:59:39.3403357+08:00
+2026-06-01T13:59:39.3423580+08:00
+2026-06-01T13:59:39.3433364+08:00 No pending migrations to apply.
+2026-06-01T13:59:39.3452660+08:00 PASS Prisma migrate deploy
+2026-06-01T13:59:39.3463393+08:00 START Pre-seed row counts
+2026-06-01T13:59:40.8841644+08:00 Before seed counts users=6 skills=5 skillVersions=6 trackedVersions=2 auditLogs=1 gitImportSources=0 gitImportJobs=0
+2026-06-01T13:59:40.8862309+08:00 PASS Pre-seed row counts
+2026-06-01T14:00:29.8704866+08:00 START Prisma db seed
+2026-06-01T14:00:31.8648407+08:00 Loaded Prisma config from prisma.config.ts.
+2026-06-01T14:00:31.8706165+08:00 System.Management.Automation.RemoteException
+2026-06-01T14:00:31.8726187+08:00 Running seed command `tsx prisma/seed.ts` ...
+2026-06-01T14:00:31.8736250+08:00 Seeded demo data into skills_repo: users=6, skills=5, trackedVersions=2, auditLogs=1
+2026-06-01T14:00:31.8758973+08:00
+2026-06-01T14:00:31.8769179+08:00 The seed command has been executed.
+2026-06-01T14:00:31.8789044+08:00 PASS Prisma db seed
+2026-06-01T14:00:31.8809078+08:00 START Database smoke
+2026-06-01T14:00:33.2931692+08:00
+2026-06-01T14:00:33.2951668+08:00 > internal-skills-management-platform@0.1.0 prisma:smoke
+2026-06-01T14:00:33.2971781+08:00 > tsx prisma/smoke.ts
+2026-06-01T14:00:33.2991685+08:00
+2026-06-01T14:00:33.3001824+08:00 Database smoke passed users=6 skills=7 skillVersions=9 trackedVersions=2 auditLogs=8 gitImportSources=1 gitImportJobs=1
+2026-06-01T14:00:33.3021798+08:00 PASS Database smoke
+2026-06-01T14:00:33.3041667+08:00 PASS Database deployment verification completed

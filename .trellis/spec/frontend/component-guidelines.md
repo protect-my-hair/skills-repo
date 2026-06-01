@@ -59,8 +59,12 @@ one-off page colors for routine visual polish.
 When strengthening the first screen, keep it terminal-inspired rather than
 marketing-led: use the existing title, chips, and `const skills = ...` code
 card, with CSS-only grid/glow/scanline effects if needed. Header action modules
-such as role selection and logout placeholders should stay compact in the top
-navigation bar instead of becoming large feature cards.
+such as session identity and logout should stay compact in the top navigation
+bar instead of becoming large feature cards.
+
+The role display is session-derived. Do not add a frontend role switch or send
+demo role headers; admin actions should be shown from `snapshot.capabilities`
+and backend RBAC remains the authority.
 
 If browser feedback says the header hero feels too empty, fill the space with a
 concise product-description treatment and non-interactive tag pills. Tags should

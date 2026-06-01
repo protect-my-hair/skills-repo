@@ -23,6 +23,8 @@ export async function readStore(): Promise<SkillStoreSnapshot> {
     skills: parsed.skills,
     trackedVersions: parsed.trackedVersions,
     auditLogs: parsed.auditLogs,
+    gitImportSources: parsed.gitImportSources ?? [],
+    gitImportJobs: parsed.gitImportJobs ?? [],
   };
 }
 

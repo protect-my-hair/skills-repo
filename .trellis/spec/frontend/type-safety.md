@@ -49,3 +49,7 @@ lives in `src/lib/skill-service.ts`.
   the API and UI via `src/lib/domain.ts`.
 - `SkillDraftInput`, `GitImportInput`, and `UpdateSkillInput` are mutation
   inputs in `src/lib/skill-service.ts`.
+- `SkillsReadModel` in `src/lib/read-model.ts` is the frontend API response
+  contract for `/api/skills` and mutation refresh responses.
+- API error responses include `{ code, error }`; the UI may display `error`,
+  but backend tests own the stable `code` contract.

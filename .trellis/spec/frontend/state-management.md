@@ -35,9 +35,13 @@ When frontend code exists, classify state before choosing a tool:
 Current examples:
 
 - Local UI state: filters, selected Skill, editor mode, preview mode.
-- Server state: full `SkillStoreSnapshot` fetched from `/api/skills`.
+- Server state: permission-aware `SkillsReadModel` fetched from `/api/skills`
+  with session credentials.
 - Derived state: filtered Skills and dashboard summary use `useMemo` and pure
   helpers from `src/lib/domain.ts`.
+
+Auth/session state is owned by Auth.js via `SessionProvider` and `useSession`.
+Do not reintroduce local role switching as a source of truth.
 
 ---
 
@@ -47,3 +51,5 @@ Current examples:
 - Duplicating the same source of truth in local, global, and server caches.
 - Hiding important workflow state in module-level mutable variables.
 - Treating generated Trellis workflow state as a frontend app state pattern.
+- Filtering restricted Skills or audit logs only in the browser. Visibility
+  must come from the backend read model.

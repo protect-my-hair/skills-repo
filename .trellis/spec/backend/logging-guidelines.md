@@ -6,10 +6,9 @@
 
 ## Current Status
 
-No backend logging library or log format has been selected. There is no
-application logger, structured log schema, or backend runtime entrypoint.
-
-The current rules come from `AGENTS.md` and apply when backend code is added.
+No backend logging library or structured log schema has been selected. The
+backend currently relies on Next.js/Auth.js runtime logs plus explicit safe JSON
+error responses.
 
 ---
 
@@ -29,6 +28,8 @@ Define concrete log fields after the first logger is introduced.
 Never log:
 
 - API keys, tokens, passwords, cookies, session secrets, or private keys.
+- `AUTH_SECRET`, `DATABASE_URL`, OAuth/OIDC tokens, Auth.js cookies, session
+  tokens, or credential provider inputs.
 - Raw credentials or secret environment variable values.
 - Sensitive user data unless the task explicitly defines a safe redaction
   policy.
@@ -53,5 +54,9 @@ Until then, keep logging decisions conservative:
 
 ## Verification
 
-Before completing backend work that adds logging, search changed files for
-secret-like names and verify no sensitive value is printed.
+Before completing backend work that adds logging or auth/database config:
+
+- Search changed files for secret-like names and verify no sensitive value is
+  printed.
+- Keep missing-secret diagnostics in server logs only; user-facing API responses
+  must use safe public messages from `src/lib/api-errors.ts`.

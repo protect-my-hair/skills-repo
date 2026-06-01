@@ -1,36 +1,36 @@
 import { NextResponse } from "next/server";
 
-import { errorResponse, getActorFromRequest } from "@/lib/http";
-import { updateStore } from "@/lib/store";
+import { errorResponse, getActorFromSession } from "@/lib/http";
+import { buildSkillsReadModel } from "@/lib/read-model";
+import { updateSkillsSnapshot } from "@/lib/skill-repository";
+import { trackSkillVersion, type TrackVersionInput } from "@/lib/skill-service";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
-interface TrackBody {
-  skillId: string;
-  versionId: string;
-}
-
 export async function POST(request: Request) {
   try {
-    const actor = getActorFromRequest(request);
-    const body = (await request.json()) as TrackBody;
+    const actor = await getActorFromSession();
+    const body = (await request.json()) as TrackVersionInput;
+    const now = new Date().toISOString();
 
-    const snapshot = await updateStore((current) => ({
-      ...current,
-      trackedVersions: [
-        ...current.trackedVersions.filter(
-          (item) => item.userId !== actor.id || item.skillId !== body.skillId,
-        ),
-        {
-          userId: actor.id,
-          skillId: body.skillId,
-          versionId: body.versionId,
-        },
-      ],
-    }));
+    const snapshot = await updateSkillsSnapshot((current) => {
+      const result = trackSkillVersion(
+        current.skills,
+        current.trackedVersions,
+        body,
+        actor,
+        now,
+      );
 
-    return NextResponse.json(snapshot);
+      return {
+        ...current,
+        trackedVersions: result.trackedVersions,
+        auditLogs: [result.auditLog, ...current.auditLogs],
+      };
+    });
+
+    return NextResponse.json(buildSkillsReadModel(snapshot, actor));
   } catch (error) {
     return errorResponse(error);
   }

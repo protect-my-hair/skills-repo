@@ -8,6 +8,7 @@ export type SkillStatus =
 export type ActorRole = "employee" | "admin";
 
 export type VersionState = "current" | "upgrade_available" | "not_tracked";
+export type GitImportJobStatus = "queued" | "succeeded" | "failed";
 
 export interface Actor {
   id: string;
@@ -66,6 +67,27 @@ export interface AuditLog {
   targetName: string;
   createdAt: string;
   summary: string;
+}
+
+export interface GitImportSource {
+  id: string;
+  repositoryUrl: string;
+  repositoryName: string;
+  trustedHost: string;
+  createdAt: string;
+}
+
+export interface GitImportJob {
+  id: string;
+  sourceId: string;
+  skillId: string | null;
+  actorId: string;
+  status: GitImportJobStatus;
+  sourceRef?: string;
+  sourceCommit?: string;
+  error?: string;
+  createdAt: string;
+  completedAt?: string;
 }
 
 export interface SkillFilters {

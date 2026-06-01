@@ -6,9 +6,10 @@
 
 ## Current Baseline
 
-There is no backend application code yet. Backend quality rules therefore come
-from `AGENTS.md` and should be made more specific when real backend source
-exists.
+Backend code now exists in `src/app/api/`, `src/auth.ts`, `src/lib/`, and
+`prisma/`. Quality rules apply to Auth.js session handling, route handlers,
+read models, service logic, repository mapping, Prisma schema/migrations, and
+the local JSON fallback.
 
 ---
 
@@ -45,16 +46,27 @@ Backend work should follow these project-wide rules:
 
 ## Testing Requirements
 
-No backend test runner exists yet. When backend code is introduced:
+The backend uses Vitest for pure logic and contract tests. Current required
+coverage includes:
 
-- Add tests for new features and high-risk changes before or alongside the
-  implementation.
-- Cover behavior at the level supported by the selected stack: unit tests for
-  pure logic, integration tests for persistence or external boundaries, and
-  workflow tests for critical user paths.
+- Auth/session actor parsing.
+- Internal auth configuration defaults.
+- API error envelopes.
+- Permission-aware read models.
+- Service behavior for create/import/edit/transition/bulk/track workflows.
+- Prisma enum mapper round trips.
+
+For future backend changes:
+
+- Add tests for new features and high-risk changes before implementation.
+- Cover behavior at the level supported by the stack: unit tests for pure
+  logic, integration tests for persistence or external boundaries, and workflow
+  tests for critical user paths.
 - Run the smallest relevant test set before completion.
-- If tests cannot run because the project has no test system yet, document that
-  limitation in the task result and update the spec once testing is added.
+- Run `npm run lint`, `npm run test`, `npm run typecheck`, and `npm run build`
+  before claiming the backend is complete.
+- When a PostgreSQL test database exists, add migration and repository smoke
+  tests for `src/lib/skill-repository.ts`.
 
 ---
 

@@ -10,6 +10,7 @@ chrome-qa.*.log
 .chrome-qa*/
 qa-*.png
 *.tsbuildinfo
+src/generated/prisma/
 
 # Local environment files
 .env*.local

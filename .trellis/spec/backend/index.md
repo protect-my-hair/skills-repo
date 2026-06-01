@@ -6,19 +6,21 @@
 
 ## Current Scope
 
-This repository currently contains Trellis workflow files and platform
-integration files, but no application backend source code, package manifest,
-API server, database schema, migrations, or tests.
+This repository now contains a self-contained Next.js production backend
+foundation for the Skills Repo console.
 
-Do not infer backend application conventions from generated Trellis runtime or
-platform adapter files. Those files describe the AI workflow, not the product
-backend.
+The product backend boundary is:
 
-Evidence:
+- `src/app/api/**` for App Router route handlers.
+- `src/auth.ts` and `src/app/api/auth/[...nextauth]/route.ts` for Auth.js.
+- `src/lib/http.ts`, `src/lib/session-actor.ts`, `src/lib/read-model.ts`,
+  `src/lib/skill-service.ts`, and `src/lib/skill-repository.ts` for shared
+  backend logic.
+- `prisma/schema.prisma` and `prisma/migrations/` for PostgreSQL schema and
+  migrations.
 
-- `AGENTS.md` defines the project entry point for AI assistants.
-- `.trellis/tasks/00-bootstrap-guidelines/prd.md` defines this bootstrap task.
-- Repository inventory on 2026-05-30 found no backend application source files.
+Generated Trellis runtime and platform adapter files are still workflow
+infrastructure, not product backend examples.
 
 ---
 
@@ -26,12 +28,12 @@ Evidence:
 
 | Guide | Description | Status |
 |-------|-------------|--------|
-| [Directory Structure](./directory-structure.md) | Current backend layout and boundaries | Baseline established |
-| [Database Guidelines](./database-guidelines.md) | Current persistence status and rules for introducing storage | Baseline established |
-| [Error Handling](./error-handling.md) | Error handling rules inherited from project instructions | Baseline established |
-| [Quality Guidelines](./quality-guidelines.md) | Maintainability, dependency, and testing expectations | Baseline established |
+| [Directory Structure](./directory-structure.md) | Current backend layout and boundaries | Active |
+| [Database Guidelines](./database-guidelines.md) | Prisma/PostgreSQL persistence and migration rules | Active |
+| [Error Handling](./error-handling.md) | API error envelope and safe failure behavior | Active |
+| [Quality Guidelines](./quality-guidelines.md) | Maintainability, dependency, and testing expectations | Active |
 | [Logging Guidelines](./logging-guidelines.md) | Logging and sensitive-data boundaries | Baseline established |
-| [API Contracts](./api-contracts.md) | Current Skills MVP API route contracts | Active |
+| [API Contracts](./api-contracts.md) | Session-aware Skills API route contracts | Active |
 
 ---
 

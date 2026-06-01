@@ -1,9 +1,17 @@
-import type { AuditLog, Skill, TrackedVersion } from "./domain";
+import type {
+  AuditLog,
+  GitImportJob,
+  GitImportSource,
+  Skill,
+  TrackedVersion,
+} from "./domain";
 
 export interface SkillStoreSnapshot {
   skills: Skill[];
   trackedVersions: TrackedVersion[];
   auditLogs: AuditLog[];
+  gitImportSources: GitImportSource[];
+  gitImportJobs: GitImportJob[];
 }
 
 export const seededStore: SkillStoreSnapshot = {
@@ -203,4 +211,6 @@ export const seededStore: SkillStoreSnapshot = {
       summary: "Mira Admin published RAG Helper 1.2.0",
     },
   ],
+  gitImportSources: [],
+  gitImportJobs: [],
 };

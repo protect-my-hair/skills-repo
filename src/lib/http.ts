@@ -1,23 +1,19 @@
 import { NextResponse } from "next/server";
 
+import { auth } from "@/auth";
+import { toErrorPayload, unauthorizedError } from "./api-errors";
 import type { Actor } from "./domain";
+import { actorFromSessionUser } from "./session-actor";
 
-const ADMIN_ACTOR: Actor = {
-  id: "admin-1",
-  name: "Mira Admin",
-  role: "admin",
-};
+export async function getActorFromSession(): Promise<Actor> {
+  const session = await auth();
+  const actor = actorFromSessionUser(session?.user ?? null);
 
-const EMPLOYEE_ACTOR: Actor = {
-  id: "employee-1",
-  name: "Eli Employee",
-  role: "employee",
-};
+  if (!actor) {
+    throw unauthorizedError();
+  }
 
-export function getActorFromRequest(request: Request): Actor {
-  return request.headers.get("x-demo-role") === "admin"
-    ? ADMIN_ACTOR
-    : EMPLOYEE_ACTOR;
+  return actor;
 }
 
 export function jsonError(message: string, status = 400): NextResponse {
@@ -25,7 +21,6 @@ export function jsonError(message: string, status = 400): NextResponse {
 }
 
 export function errorResponse(error: unknown): NextResponse {
-  const message = error instanceof Error ? error.message : "Request failed";
-  const status = message === "Admin role required" ? 403 : 400;
-  return jsonError(message, status);
+  const payload = toErrorPayload(error);
+  return NextResponse.json(payload.body, { status: payload.status });
 }

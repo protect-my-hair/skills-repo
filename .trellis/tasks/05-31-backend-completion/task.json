@@ -1,0 +1,28 @@
+{
+  "id": "backend-completion",
+  "name": "backend-completion",
+  "title": "Complete skills-repo backend work",
+  "description": "",
+  "status": "in_progress",
+  "dev_type": null,
+  "scope": null,
+  "package": null,
+  "priority": "P2",
+  "creator": "jenway",
+  "assignee": "jenway",
+  "createdAt": "2026-05-31",
+  "completedAt": null,
+  "branch": null,
+  "base_branch": "main",
+  "worktree_path": null,
+  "commit": null,
+  "pr_url": null,
+  "subtasks": [],
+  "children": [
+    "06-01-backend-production-database-deployment"
+  ],
+  "parent": null,
+  "relatedFiles": [],
+  "notes": "",
+  "meta": {}
+}
