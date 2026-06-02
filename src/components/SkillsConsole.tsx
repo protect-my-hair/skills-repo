@@ -222,7 +222,7 @@ export function SkillsConsole() {
     [pagination.currentPage, pagination.totalPages],
   );
   const summary = getSkillSummary(visibleSkills);
-  const categories = unique(visibleSkills.map((skill) => skill.category));
+  const categories = SYSTEM_SKILL_CATEGORIES;
   const teamsAndSources = unique(
     visibleSkills.flatMap((skill) => [skill.maintainingTeam, skill.source]),
   );

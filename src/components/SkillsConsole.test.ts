@@ -68,6 +68,13 @@ describe("SkillsConsole install actions", () => {
 });
 
 describe("SkillsConsole Skill authoring", () => {
+  test("uses the shared system category directory for list filter options", () => {
+    expect(source).toContain("const categories = SYSTEM_SKILL_CATEGORIES;");
+    expect(source).not.toContain(
+      "const categories = unique(visibleSkills.map((skill) => skill.category));",
+    );
+  });
+
   test("uses the shared system category directory for edit and bulk category controls", () => {
     expect(source).toContain("SYSTEM_SKILL_CATEGORIES");
     expect(source).toContain("skill-category-select");
