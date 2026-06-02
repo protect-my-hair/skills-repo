@@ -1470,14 +1470,14 @@ td input {
 
 .install-action-panel {
   display: grid;
-  gap: 12px;
+  gap: 10px;
   min-width: 0;
   max-width: 100%;
   margin-top: 12px;
-  padding: 12px;
+  padding: 10px;
   overflow: hidden;
   background:
-    linear-gradient(180deg, rgba(34, 197, 94, 0.08), transparent 42%),
+    linear-gradient(180deg, rgba(34, 197, 94, 0.06), transparent 44%),
     rgba(15, 23, 42, 0.7);
   border: 1px solid rgba(34, 197, 94, 0.2);
   border-radius: var(--radius);
@@ -1506,9 +1506,9 @@ td input {
 
 .install-actions-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, 172px), 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 132px), 1fr));
   gap: 8px;
-  align-items: stretch;
+  align-items: end;
   min-width: 0;
   max-width: 100%;
 }
@@ -1520,15 +1520,18 @@ td input {
 
 .install-actions-grid .icon-text-button {
   width: 100%;
+  min-height: var(--control-height);
   min-width: 0;
-  padding-inline: 12px;
-  line-height: 1.2;
+  padding-inline: 10px;
+  font-size: 12px;
+  line-height: 1.15;
   text-align: center;
   white-space: normal;
 }
 
 .install-target-field {
   display: grid;
+  grid-column: 1 / -1;
   gap: 6px;
   min-width: 0;
   color: var(--subtle);
@@ -1542,14 +1545,39 @@ td input {
 }
 
 .install-download-button {
-  gap: 10px;
+  gap: 8px;
+  background:
+    linear-gradient(180deg, rgba(34, 197, 94, 0.2), rgba(34, 197, 94, 0.1)),
+    rgba(15, 23, 42, 0.86);
+  border-color: rgba(34, 197, 94, 0.44);
+  color: var(--green-strong);
   font-weight: 900;
+  box-shadow: 0 0 0 1px rgba(34, 197, 94, 0.08) inset;
+}
+
+.install-actions-grid .icon-text-button.install-download-button:hover {
+  background:
+    linear-gradient(180deg, rgba(34, 197, 94, 0.26), rgba(34, 197, 94, 0.14)),
+    rgba(15, 23, 42, 0.92);
+  border-color: rgba(34, 197, 94, 0.68);
+  color: var(--green-strong);
+  box-shadow:
+    0 0 0 1px rgba(34, 197, 94, 0.1) inset,
+    0 0 0 3px rgba(34, 197, 94, 0.1);
+}
+
+.install-actions-grid .install-download-button:disabled,
+.install-actions-grid .install-download-button:disabled:hover {
+  background: rgba(30, 41, 59, 0.48);
+  border-color: rgba(148, 163, 184, 0.16);
+  color: var(--subtle);
+  box-shadow: none;
 }
 
 .install-download-button svg {
-  width: 20px;
-  height: 20px;
-  flex: 0 0 20px;
+  width: 18px;
+  height: 18px;
+  flex: 0 0 18px;
   stroke-width: 2.4;
 }
 
@@ -2343,7 +2371,7 @@ td input {
   }
 
   .install-actions-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 132px), 1fr));
   }
 
   .view-tools {

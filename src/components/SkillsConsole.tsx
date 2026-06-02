@@ -1299,12 +1299,12 @@ function SkillDetail({
           </label>
 
           {installAvailability.isInstallable ? (
-            <a className="icon-text-button strong install-download-button" href={packageDownloadHref} download>
+            <a className="icon-text-button install-download-button" href={packageDownloadHref} download>
               <Download size={20} aria-hidden="true" />
               {UI_COPY.install.downloadPackage}
             </a>
           ) : (
-            <button className="icon-text-button strong install-download-button" type="button" disabled>
+            <button className="icon-text-button install-download-button" type="button" disabled>
               <Download size={20} aria-hidden="true" />
               {UI_COPY.install.downloadPackage}
             </button>

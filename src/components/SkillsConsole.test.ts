@@ -55,14 +55,15 @@ describe("SkillsConsole install actions", () => {
 
   test("keeps the install action controls responsive inside the detail panel", () => {
     expect(globalStyles).toContain(
-      "repeat(auto-fit, minmax(min(100%, 172px), 1fr))",
+      "repeat(auto-fit, minmax(min(100%, 132px), 1fr))",
     );
     expect(globalStyles).toContain(".install-actions-grid > *");
+    expect(globalStyles).toContain("grid-column: 1 / -1;");
     expect(globalStyles).toContain("min-width: 0;");
     expect(source).toContain("install-download-button");
     expect(globalStyles).toContain(".install-download-button svg");
-    expect(globalStyles).toContain("width: 20px;");
-    expect(globalStyles).toContain("height: 20px;");
+    expect(globalStyles).toContain("width: 18px;");
+    expect(globalStyles).toContain("height: 18px;");
   });
 });
 
