@@ -58,6 +58,16 @@ Persisted domain models:
 - `AuditLog`
 - `GitImportSource`, `GitImportJob`
 
+Repository writeback must tolerate legacy snapshots for optional package
+resource fields. If `Skill.references`, `Skill.scripts`,
+`SkillVersion.references`, or `SkillVersion.scripts` are missing, persist them
+as empty Prisma JSON arrays instead of surfacing an internal mutation error.
+
+Repository writeback must preserve internal auth users. When version
+`author` or `publisher` names match seeded internal users such as
+`Mira Admin`, reuse the shared seed-user mapping and keep the internal user's
+email and role instead of deriving a generic employee record.
+
 Generated Prisma client output under `src/generated/prisma/` is ignored by git.
 Run `npm run prisma:generate` before type-checking if the schema changed.
 Prisma v7 CLI datasource wiring lives in `prisma.config.ts`, not in

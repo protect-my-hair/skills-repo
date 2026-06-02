@@ -5,7 +5,6 @@ import {
   ImportJobStatus,
   SkillStatus,
   SkillVisibility,
-  UserRole,
 } from "@/generated/prisma/enums";
 
 import type {
@@ -27,17 +26,15 @@ import {
 } from "./prisma-mappers";
 import { normalizeSkillAssetFiles } from "./skill-assets";
 import { getPrismaClient } from "./prisma";
+import {
+  collectSeedUsers,
+  seedUserIdForName,
+  type DatabaseUserSeed,
+} from "./seed-users";
 import type { SkillStoreSnapshot } from "./seed-data";
 import { readStore, updateStore } from "./store";
 
 type SnapshotUpdater = (snapshot: SkillStoreSnapshot) => SkillStoreSnapshot;
-
-interface DatabaseUserSeed {
-  id: string;
-  name: string;
-  email: string | null;
-  role: typeof UserRole[keyof typeof UserRole];
-}
 
 export async function readSkillsSnapshot(): Promise<SkillStoreSnapshot> {
   if (!hasDatabaseConfigured()) {
@@ -355,8 +352,8 @@ function toDomainAssetFiles(
   return normalizeSkillAssetFiles(files as SkillAssetFile[], groupName);
 }
 
-function toPrismaAssetFiles(files: SkillAssetFile[]): InputJsonValue {
-  return files.map((file) => ({
+function toPrismaAssetFiles(files: SkillAssetFile[] | undefined): InputJsonValue {
+  return (files ?? []).map((file) => ({
     path: file.path,
     content: file.content,
     ...(file.description ? { description: file.description } : {}),
@@ -413,52 +410,17 @@ function toDomainImportJob(job: PrismaGitImportJobRow): DomainGitImportJob {
 }
 
 function collectUsers(snapshot: SkillStoreSnapshot): DatabaseUserSeed[] {
-  const users = new Map<string, DatabaseUserSeed>();
-
-  for (const user of INTERNAL_AUTH_USERS) {
-    users.set(user.id, {
-      id: user.id,
-      name: user.name,
-      email: user.email,
-      role: user.role === "admin" ? UserRole.ADMIN : UserRole.EMPLOYEE,
-    });
-  }
-
-  for (const skill of snapshot.skills) {
-    for (const version of skill.versions) {
-      users.set(userIdForName(version.author), userSeedForName(version.author));
-
-      if (version.publisher) {
-        users.set(
-          userIdForName(version.publisher),
-          userSeedForName(version.publisher),
-        );
-      }
-    }
-  }
-
-  return [...users.values()];
-}
-
-function userSeedForName(name: string): DatabaseUserSeed {
-  return {
-    id: userIdForName(name),
-    name,
-    email: null,
-    role: UserRole.EMPLOYEE,
-  };
+  return collectSeedUsers({
+    internalUsers: INTERNAL_AUTH_USERS,
+    versionActors: snapshot.skills.flatMap((skill) =>
+      skill.versions.map((version) => ({
+        author: version.author,
+        publisher: version.publisher,
+      })),
+    ),
+  });
 }
 
 function userIdForName(name: string): string {
-  const internalUser = INTERNAL_AUTH_USERS.find((user) => user.name === name);
-
-  if (internalUser) {
-    return internalUser.id;
-  }
-
-  return `user-${name
-    .trim()
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-|-$/g, "")}`;
+  return seedUserIdForName(name, INTERNAL_AUTH_USERS);
 }
