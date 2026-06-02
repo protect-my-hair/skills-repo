@@ -44,6 +44,13 @@ import {
   paginateItems,
 } from "@/lib/pagination";
 import type { SkillsReadModel } from "@/lib/read-model";
+import {
+  INSTALL_TARGETS,
+  createInstallCommand,
+  getSkillInstallAvailability,
+  getSkillPackageDownloadPath,
+  type InstallTarget,
+} from "@/lib/skill-install";
 import type { GitImportInput, SkillDraftInput, UpdateSkillInput } from "@/lib/skill-service";
 import { PRODUCT_NAME, ROLE_LABELS, STATUS_LABELS, UI_COPY } from "@/lib/ui-copy";
 
@@ -778,6 +785,7 @@ export function SkillsConsole() {
         <aside className="detail-panel">
           {selectedSkill ? (
             <SkillDetail
+              key={selectedSkill.id}
               skill={selectedSkill}
               auditLogs={recentAuditLogs}
               isAdmin={isAdmin}
@@ -1118,11 +1126,48 @@ function SkillDetail({
   onReject: () => void;
 }) {
   const currentVersion = getCurrentVersion(skill);
+  const installAvailability = getSkillInstallAvailability(skill);
   const latestVersion = skill.versions.at(-1);
   const publishedVersionCount = skill.versions.filter((version) => version.publishedAt).length;
   const isOwner = skill.ownerId === currentUserId && skill.visibility === "personal";
   const isReviewMode = workspaceMode === "review" && isAdmin;
   const canEditPersonalSkill = isOwner && workspaceMode === "mine";
+  const packageDownloadHref = getSkillPackageDownloadPath(skill);
+  const [installTarget, setInstallTarget] = useState<InstallTarget>("codex");
+  const [showInstallInstructions, setShowInstallInstructions] = useState(false);
+  const [isCopyingInstallCommand, setIsCopyingInstallCommand] = useState(false);
+  const [installFeedback, setInstallFeedback] = useState("");
+  const [pageOrigin] = useState(() =>
+    typeof window === "undefined" ? "" : window.location.origin,
+  );
+  const selectedInstallTarget =
+    INSTALL_TARGETS.find((target) => target.id === installTarget) ?? INSTALL_TARGETS[0];
+  const installCommand = createInstallCommand({
+    skill,
+    target: installTarget,
+    origin: pageOrigin,
+  });
+  const unavailableReason = installAvailability.reason
+    ? UI_COPY.install.unavailableReasons[installAvailability.reason]
+    : null;
+
+  async function copyInstallCommand() {
+    if (!installAvailability.isInstallable || !navigator.clipboard) {
+      setInstallFeedback(UI_COPY.install.copyFailed);
+      return;
+    }
+
+    setIsCopyingInstallCommand(true);
+
+    try {
+      await navigator.clipboard.writeText(installCommand);
+      setInstallFeedback(UI_COPY.install.copied);
+    } catch {
+      setInstallFeedback(UI_COPY.install.copyFailed);
+    } finally {
+      setIsCopyingInstallCommand(false);
+    }
+  }
 
   return (
     <>
@@ -1200,19 +1245,109 @@ function SkillDetail({
             </button>
           </>
         ) : (
-          <button
-            className="icon-text-button strong"
-            type="button"
-            disabled={!currentVersion}
-            onClick={onTrack}
-          >
-            <Download size={17} aria-hidden="true" />
-            {versionState.state === "upgrade_available"
-              ? UI_COPY.actions.upgradeTrackedVersion
-              : UI_COPY.actions.trackCurrentVersion}
-          </button>
+          <div className="tracking-action-group">
+            <div>
+              <strong>{UI_COPY.install.trackingTitle}</strong>
+              <span>{UI_COPY.install.trackingHelp}</span>
+            </div>
+            <button
+              className="icon-text-button"
+              type="button"
+              disabled={!currentVersion}
+              onClick={onTrack}
+            >
+              <GitBranch size={17} aria-hidden="true" />
+              {versionState.state === "upgrade_available"
+                ? UI_COPY.actions.upgradeTrackedVersion
+                : UI_COPY.actions.trackCurrentVersion}
+            </button>
+          </div>
         )}
       </div>
+
+      <section className="install-action-panel" aria-labelledby={`${skill.id}-install-title`}>
+        <div className="install-action-heading">
+          <div>
+            <h3 id={`${skill.id}-install-title`}>{UI_COPY.install.title}</h3>
+            <p>{UI_COPY.install.description}</p>
+          </div>
+          <span className={`detail-pill ${installAvailability.isInstallable ? "positive" : "subtle"}`}>
+            {installAvailability.currentVersion?.version ?? UI_COPY.detail.noRelease}
+          </span>
+        </div>
+
+        {unavailableReason ? (
+          <div className="install-warning">{unavailableReason}</div>
+        ) : null}
+
+        <div className="install-actions-grid">
+          <label className="install-target-field">
+            <span>{UI_COPY.install.targetTool}</span>
+            <select
+              value={installTarget}
+              onChange={(event) => {
+                setInstallTarget(event.target.value as InstallTarget);
+                setInstallFeedback("");
+              }}
+            >
+              {INSTALL_TARGETS.map((target) => (
+                <option key={target.id} value={target.id}>
+                  {target.label}
+                </option>
+              ))}
+            </select>
+          </label>
+
+          {installAvailability.isInstallable ? (
+            <a className="icon-text-button strong install-download-button" href={packageDownloadHref} download>
+              <Download size={20} aria-hidden="true" />
+              {UI_COPY.install.downloadPackage}
+            </a>
+          ) : (
+            <button className="icon-text-button strong install-download-button" type="button" disabled>
+              <Download size={20} aria-hidden="true" />
+              {UI_COPY.install.downloadPackage}
+            </button>
+          )}
+
+          <button
+            className="icon-text-button"
+            type="button"
+            disabled={!installAvailability.isInstallable || isCopyingInstallCommand}
+            onClick={() => void copyInstallCommand()}
+          >
+            <Code2 size={17} aria-hidden="true" />
+            {isCopyingInstallCommand ? UI_COPY.install.copying : UI_COPY.install.copyCommand}
+          </button>
+
+          <button
+            className="icon-text-button"
+            type="button"
+            aria-expanded={showInstallInstructions}
+            onClick={() => setShowInstallInstructions((current) => !current)}
+          >
+            <Eye size={17} aria-hidden="true" />
+            {showInstallInstructions
+              ? UI_COPY.install.hideInstructions
+              : UI_COPY.install.viewInstructions}
+          </button>
+        </div>
+
+        {installFeedback ? <p className="install-feedback">{installFeedback}</p> : null}
+
+        {showInstallInstructions ? (
+          <InstallInstructions
+            command={installCommand}
+            dependencies={skill.dependencies}
+            installMethod={skill.installMethod}
+            isInstallable={installAvailability.isInstallable}
+            reason={unavailableReason}
+            skill={skill}
+            targetLabel={selectedInstallTarget.label}
+            version={installAvailability.currentVersion?.version ?? UI_COPY.detail.noRelease}
+          />
+        ) : null}
+      </section>
 
       {versionState.state === "upgrade_available" ? (
         <div className="upgrade-callout">
@@ -1376,6 +1511,67 @@ function SkillDetail({
         </div>
       </section>
     </>
+  );
+}
+
+function InstallInstructions({
+  command,
+  dependencies,
+  installMethod,
+  isInstallable,
+  reason,
+  skill,
+  targetLabel,
+  version,
+}: {
+  command: string;
+  dependencies: string[];
+  installMethod: string;
+  isInstallable: boolean;
+  reason: string | null;
+  skill: Skill;
+  targetLabel: string;
+  version: string;
+}) {
+  return (
+    <div className="install-instructions">
+      <div className="section-heading">
+        <div>
+          <h3>{UI_COPY.install.instructionsTitle}</h3>
+          <p>
+            {skill.name} · {version} · {skill.compatibleTools.join(", ")}
+          </p>
+        </div>
+      </div>
+
+      {reason ? <div className="install-warning">{reason}</div> : null}
+
+      <ol>
+        {UI_COPY.install.steps.map((step) => (
+          <li key={step}>{step}</li>
+        ))}
+      </ol>
+
+      {isInstallable ? (
+        <div className="install-command-block">
+          <span>
+            {UI_COPY.install.commandFor} {targetLabel}
+          </span>
+          <code>{command}</code>
+        </div>
+      ) : null}
+
+      <dl className="install-instruction-meta">
+        <div>
+          <dt>{UI_COPY.detail.installMethod}</dt>
+          <dd>{installMethod}</dd>
+        </div>
+        <div>
+          <dt>{UI_COPY.detail.dependencies}</dt>
+          <dd>{dependencies.length > 0 ? dependencies.join(", ") : UI_COPY.detail.none}</dd>
+        </div>
+      </dl>
+    </div>
   );
 }
 

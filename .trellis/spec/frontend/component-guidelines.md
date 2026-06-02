@@ -83,6 +83,12 @@ publisher metadata, and a textual diff. Keep it visually dense and console-like,
 but do not change the underlying version or audit behavior just to support the
 presentation.
 
+For compact tool panels inside detail sidebars, do not use fixed multi-column
+button grids that can exceed the sidebar width. Use responsive tracks such as
+`repeat(auto-fit, minmax(min(100%, 172px), 1fr))`, set grid children to
+`min-width: 0`, and allow long button labels to wrap inside their own control
+instead of overflowing the panel.
+
 Native form controls must follow the same dark console theme. In particular,
 all `select` controls need explicit dark styling for the closed control and the
 native option list where the browser allows it:

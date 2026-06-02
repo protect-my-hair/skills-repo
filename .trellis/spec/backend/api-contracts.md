@@ -116,3 +116,120 @@ return NextResponse.json(
   buildSkillsReadModel(await readSkillsSnapshot(), actor),
 );
 ```
+
+## Scenario: Skill Package Download API
+
+### 1. Scope / Trigger
+
+The Skill install-actions MVP adds a controlled package download API for
+employees and admins who can read an installable Skill. This is a cross-layer
+contract because the frontend renders install actions, the API enforces session
+and RBAC, and the backend generates a zip package from the current Skill
+version.
+
+### 2. Signatures
+
+Route handler:
+
+- `GET /api/skills/[skillId]/package`
+- File: `src/app/api/skills/[skillId]/package/route.ts`
+- Dynamic route params are awaited:
+
+```typescript
+export async function GET(
+  request: Request,
+  { params }: { params: Promise<{ skillId: string }> },
+) {
+  const { skillId } = await params;
+}
+```
+
+Shared helpers:
+
+- `getSkillInstallAvailability(skill)` in `src/lib/skill-install.ts`
+- `createSkillPackageDescriptor(skill)` in `src/lib/skill-package.ts`
+- `createSkillPackageArchive(skill)` in `src/lib/skill-package.ts`
+
+### 3. Contracts
+
+Successful response:
+
+- HTTP `200`
+- `Content-Type: application/zip`
+- `Content-Disposition: attachment; filename="<skill-id>-<version>.zip"`
+- `Cache-Control: no-store`
+- Body is a zip archive generated in memory from the current published version.
+
+Package contents:
+
+- Required: `SKILL.md`
+- Optional but currently included: `README.md`, `metadata.json`
+- `SKILL.md` must be generated from `SkillVersion.content` plus safe Skill
+  metadata such as name, description, version, category, team, and compatible
+  tools.
+- `metadata.json` must not include secrets, cookies, account state, server
+  stack traces, internal absolute paths, or raw source repository URLs.
+
+Installability:
+
+- `skill.status === "published"`
+- `skill.currentVersionId` resolves to an existing version
+- Caller must pass `canReadSkill(actor, skill)`
+
+### 4. Validation & Error Matrix
+
+| Condition | Response |
+|---|---|
+| Missing/invalid session | `401 { code: "unauthorized", error: "Authentication required" }` |
+| Unknown Skill id | `404 { code: "not_found", error: "Skill not found" }` |
+| Employee targets restricted Skill | `404 { code: "not_found", error: "Skill not found" }` |
+| Skill is not `published` | `400 { code: "validation", error: "Only published Skills can be installed" }` |
+| Skill has no current published version | `400 { code: "validation", error: "No current published version is available" }` |
+| Unknown zip generation failure | `500 { code: "internal", error: "Request failed" }` |
+
+### 5. Good/Base/Bad Cases
+
+- Good: Employee downloads a public published Skill and receives
+  `rag-helper-1.2.0.zip` containing `SKILL.md`.
+- Base: Admin targets a draft Skill and receives a validation error rather than
+  draft content.
+- Bad: Route handler trusts a frontend flag, bypasses `canReadSkill`, or
+  returns a JSON snapshot instead of a zip attachment.
+
+### 6. Tests Required
+
+- `src/lib/skill-package.test.ts`: package file name, `SKILL.md`, metadata
+  shape, installability, and generated install commands.
+- `src/app/api/skills/[skillId]/package/route.test.ts`: route source contract
+  for session resolution, `canReadSkill`, awaited params, safe 404, zip
+  response headers, and `createSkillPackageArchive`.
+- API smoke should cover unauthenticated 401 and an authenticated employee
+  download when local credentials are available.
+
+### 7. Wrong vs Correct
+
+#### Wrong
+
+```typescript
+const skill = snapshot.skills.find((item) => item.id === skillId);
+return Response.json(skill);
+```
+
+#### Correct
+
+```typescript
+const actor = await getActorFromSession();
+const skill = snapshot.skills.find((item) => item.id === skillId);
+
+if (!skill || !canReadSkill(actor, skill)) {
+  throw notFoundError("Skill");
+}
+
+const archive = await createSkillPackageArchive(skill);
+return new Response(new Uint8Array(archive.buffer), {
+  headers: {
+    "Content-Type": "application/zip",
+    "Content-Disposition": `attachment; filename="${archive.fileName}"`,
+  },
+});
+```
