@@ -44,8 +44,8 @@ export function createSkillPackageDescriptor(skill: Skill): SkillPackageDescript
     fileName,
     files: {
       "SKILL.md": createSkillEntryFile(skill, version),
-      "README.md": createPackageReadme(skill, version),
-      "metadata.json": `${JSON.stringify(createPackageMetadata(skill, version), null, 2)}\n`,
+      ...createAssetFiles("references", version.references),
+      ...createAssetFiles("scripts", version.scripts),
     },
   };
 }
@@ -86,48 +86,13 @@ function createSkillEntryFile(skill: Skill, version: SkillVersion): string {
   ].join("\n");
 }
 
-function createPackageReadme(skill: Skill, version: SkillVersion): string {
-  const dependencies =
-    skill.dependencies.length > 0
-      ? skill.dependencies.map((dependency) => `- ${dependency}`).join("\n")
-      : "- None";
-
-  return [
-    `# ${skill.name}`,
-    "",
-    `Version: ${version.version}`,
-    `Tools: ${skill.compatibleTools.join(", ")}`,
-    `Maintainer team: ${skill.maintainingTeam}`,
-    "",
-    "## Installation",
-    "Expand this package into the target tool's local skills directory.",
-    "",
-    "## Original Install Method",
-    skill.installMethod,
-    "",
-    "## Dependencies",
-    dependencies,
-    "",
-    "## Usage",
-    skill.readme.trim(),
-    "",
-  ].join("\n");
-}
-
-function createPackageMetadata(skill: Skill, version: SkillVersion) {
-  return {
-    id: skill.id,
-    name: skill.name,
-    description: skill.description,
-    version: version.version,
-    category: skill.category,
-    compatibleTools: skill.compatibleTools,
-    maintainingTeam: skill.maintainingTeam,
-    maintainers: skill.maintainers,
-    dependencies: skill.dependencies,
-    generatedFromVersionId: version.id,
-    publishedAt: version.publishedAt ?? null,
-  };
+function createAssetFiles(
+  directory: "references" | "scripts",
+  files: SkillVersion["references"] | undefined,
+): Record<string, string> {
+  return Object.fromEntries(
+    (files ?? []).map((file) => [`${directory}/${file.path}`, file.content]),
+  );
 }
 
 function safeFilePart(value: string): string {

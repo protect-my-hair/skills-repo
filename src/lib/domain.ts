@@ -26,11 +26,20 @@ export interface SkillVersion {
   author: string;
   publishedAt?: string;
   publisher?: string;
+  references: SkillAssetFile[];
+  scripts: SkillAssetFile[];
 }
 
 export interface SkillSourceMetadata {
   repositoryUrl?: string;
   repositoryName?: string;
+}
+
+export interface SkillAssetFile {
+  path: string;
+  content: string;
+  description?: string;
+  language?: string;
 }
 
 export interface Skill {
@@ -52,6 +61,8 @@ export interface Skill {
   installMethod: string;
   dependencies: string[];
   readme: string;
+  references: SkillAssetFile[];
+  scripts: SkillAssetFile[];
   currentVersionId: string | null;
   versions: SkillVersion[];
   reviewSubmittedAt?: string;

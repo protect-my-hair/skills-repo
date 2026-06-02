@@ -115,6 +115,12 @@ When changing the dark theme, keep a regression test that reads
 `src/app/globals.css` and checks the select/option/disabled rules so browser
 defaults do not reintroduce white dropdowns.
 
+Skill authoring forms should distinguish the required root `SKILL.md` content
+from optional package resource groups. Use compact `details` panels for
+`references/` and `scripts/`, show each resource file path/content close to its
+validation feedback, and keep paths relative to the selected group rather than
+asking authors to type the package directory prefix.
+
 When a user asks to align the whole console with the dark Skill card style, keep
 existing product content intact and only reuse approved existing values. For
 example, the top shell may render the existing `Skills 总数` value as a

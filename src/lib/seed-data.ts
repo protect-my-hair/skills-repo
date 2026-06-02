@@ -20,7 +20,7 @@ export const seededStore: SkillStoreSnapshot = {
       id: "rag-helper",
       name: "RAG Helper",
       description: "Retrieval checklist and prompt structure for knowledge agents.",
-      category: "Knowledge",
+      category: "Data&AI",
       tags: ["rag", "support", "retrieval"],
       compatibleTools: ["Codex", "Claude"],
       status: "published",
@@ -39,6 +39,8 @@ export const seededStore: SkillStoreSnapshot = {
       dependencies: ["vector-index", "knowledge-base-access"],
       readme:
         "## Usage\nUse this Skill when answering support or product knowledge questions.\n\n- Confirm the user's intent\n- Retrieve relevant internal context\n- Cite the source system\n- Escalate when evidence is missing",
+      references: [],
+      scripts: [],
       currentVersionId: "rag-v2",
       versions: [
         {
@@ -51,6 +53,8 @@ export const seededStore: SkillStoreSnapshot = {
           author: "Ada Chen",
           publishedAt: "2026-05-01T10:00:00.000Z",
           publisher: "Ada Chen",
+          references: [],
+          scripts: [],
         },
         {
           id: "rag-v2",
@@ -62,6 +66,14 @@ export const seededStore: SkillStoreSnapshot = {
           author: "Ada Chen",
           publishedAt: "2026-05-28T10:00:00.000Z",
           publisher: "Ada Chen",
+          references: [
+            {
+              path: "usage-guide.md",
+              content:
+                "# RAG Helper Usage\nUse this reference when adapting the retrieval checklist.",
+            },
+          ],
+          scripts: [],
         },
       ],
     },
@@ -69,7 +81,7 @@ export const seededStore: SkillStoreSnapshot = {
       id: "incident-triage",
       name: "Incident Triage",
       description: "Step-by-step operational checklist for high-priority incidents.",
-      category: "Operations",
+      category: "DevOps",
       tags: ["incident", "sre"],
       compatibleTools: ["Codex"],
       status: "pending_review",
@@ -84,6 +96,8 @@ export const seededStore: SkillStoreSnapshot = {
       dependencies: ["pager-policy", "runbook-index"],
       readme:
         "## Usage\nRun this Skill when an incident channel is opened.\n\n- Capture impact\n- Identify owner\n- Build first timeline\n- Prepare customer-facing summary",
+      references: [],
+      scripts: [],
       currentVersionId: null,
       versions: [
         {
@@ -94,6 +108,8 @@ export const seededStore: SkillStoreSnapshot = {
           changelog: "Drafted first incident triage workflow.",
           createdAt: "2026-05-30T08:00:00.000Z",
           author: "Mira Admin",
+          references: [],
+          scripts: [],
         },
       ],
     },
@@ -101,7 +117,7 @@ export const seededStore: SkillStoreSnapshot = {
       id: "finance-review",
       name: "Finance Review",
       description: "Review operating expense anomalies before month-end close.",
-      category: "Finance",
+      category: "Databases",
       tags: ["finance", "review"],
       compatibleTools: ["Claude"],
       status: "draft",
@@ -116,6 +132,8 @@ export const seededStore: SkillStoreSnapshot = {
       dependencies: ["expense-export"],
       readme:
         "## Usage\nUse for reviewing operating expense anomalies.\n\n- Group expenses by vendor\n- Flag unusual month-over-month changes\n- Prepare reviewer notes",
+      references: [],
+      scripts: [],
       currentVersionId: null,
       versions: [
         {
@@ -126,6 +144,8 @@ export const seededStore: SkillStoreSnapshot = {
           changelog: "Initial draft.",
           createdAt: "2026-05-29T09:00:00.000Z",
           author: "Lin Zhao",
+          references: [],
+          scripts: [],
         },
       ],
     },
@@ -133,7 +153,7 @@ export const seededStore: SkillStoreSnapshot = {
       id: "legacy-crm-sync",
       name: "Legacy CRM Sync",
       description: "Deprecated workflow for older CRM enrichment tasks.",
-      category: "Sales",
+      category: "Tools",
       tags: ["crm", "legacy"],
       compatibleTools: ["Codex", "Copilot"],
       status: "deprecated",
@@ -152,6 +172,8 @@ export const seededStore: SkillStoreSnapshot = {
       dependencies: ["crm-readonly-token"],
       readme:
         "## Usage\nThis Skill is deprecated and kept for historical reference.",
+      references: [],
+      scripts: [],
       currentVersionId: "crm-v1",
       versions: [
         {
@@ -164,6 +186,8 @@ export const seededStore: SkillStoreSnapshot = {
           author: "Iris Wong",
           publishedAt: "2026-04-20T09:00:00.000Z",
           publisher: "Iris Wong",
+          references: [],
+          scripts: [],
         },
       ],
     },
@@ -171,7 +195,7 @@ export const seededStore: SkillStoreSnapshot = {
       id: "design-critique",
       name: "Design Critique",
       description: "Structured UX review rubric for product design feedback.",
-      category: "Design",
+      category: "Content&Media",
       tags: ["ux", "review"],
       compatibleTools: ["Claude", "Codex"],
       status: "archived",
@@ -186,6 +210,8 @@ export const seededStore: SkillStoreSnapshot = {
       dependencies: [],
       readme:
         "## Usage\nArchived critique checklist. Kept for version history.",
+      references: [],
+      scripts: [],
       currentVersionId: "design-v1",
       versions: [
         {
@@ -198,6 +224,8 @@ export const seededStore: SkillStoreSnapshot = {
           author: "Rhea Kumar",
           publishedAt: "2026-03-12T11:00:00.000Z",
           publisher: "Rhea Kumar",
+          references: [],
+          scripts: [],
         },
       ],
     },

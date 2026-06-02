@@ -27,7 +27,7 @@ const draftSkill: Skill = {
   id: "draft-skill",
   name: "Draft Skill",
   description: "A useful draft",
-  category: "Operations",
+  category: "DevOps",
   tags: ["ops"],
   compatibleTools: ["Codex"],
   status: "draft",
@@ -41,6 +41,8 @@ const draftSkill: Skill = {
   installMethod: "Install from internal registry",
   dependencies: [],
   readme: "Draft instructions",
+  references: [],
+  scripts: [],
   currentVersionId: null,
   versions: [
     {
@@ -50,6 +52,8 @@ const draftSkill: Skill = {
       changelog: "Initial draft",
       createdAt: "2026-05-30T09:00:00.000Z",
       author: "Mira Admin",
+      references: [],
+      scripts: [],
     },
   ],
 };
@@ -97,7 +101,7 @@ describe("skill service", () => {
       {
         name: "Incident Triage",
         description: "Guide incident responders through first checks",
-        category: "Operations",
+        category: "DevOps",
         tags: ["incident", "sre"],
         compatibleTools: ["Codex"],
         maintainingTeam: "SRE",
@@ -117,12 +121,109 @@ describe("skill service", () => {
     expect(result.skill.versions[0]?.content).toContain("Follow the checklist");
   });
 
+  test("creates a manual draft with optional references and scripts in the first version snapshot", () => {
+    const result = createSkillDraft(
+      {
+        name: "Package Authoring",
+        description: "Guide authors through Skill package structure",
+        category: "Documentation",
+        tags: ["authoring"],
+        compatibleTools: ["Codex"],
+        maintainingTeam: "Developer Experience",
+        maintainers: ["Mira Admin"],
+        installMethod: "Download package and expand it locally",
+        dependencies: [],
+        readme: "## Usage\nCreate SKILL.md first.",
+        references: [
+          {
+            path: " templates/example.md ",
+            content: "# Example",
+            description: " Example template ",
+          },
+        ],
+        scripts: [
+          {
+            path: "helpers/validate.js",
+            content: "console.log('ok');",
+            language: " javascript ",
+          },
+        ],
+        version: "0.1.0",
+        changelog: "Initial package structure",
+      },
+      admin,
+      "2026-06-02T09:00:00.000Z",
+    );
+
+    expect(result.skill.references).toEqual([
+      {
+        path: "templates/example.md",
+        content: "# Example",
+        description: "Example template",
+      },
+    ]);
+    expect(result.skill.scripts).toEqual([
+      {
+        path: "helpers/validate.js",
+        content: "console.log('ok');",
+        language: "javascript",
+      },
+    ]);
+    expect(result.skill.versions[0]?.references).toEqual(result.skill.references);
+    expect(result.skill.versions[0]?.scripts).toEqual(result.skill.scripts);
+  });
+
+  test("rejects unknown categories and invalid asset paths for new drafts", () => {
+    expect(() =>
+      createSkillDraft(
+        {
+          name: "Invalid Category",
+          description: "Should fail validation",
+          category: "Operations",
+          tags: [],
+          compatibleTools: ["Codex"],
+          maintainingTeam: "SRE",
+          maintainers: ["Mira Admin"],
+          installMethod: "Install from internal registry",
+          dependencies: [],
+          readme: "## Usage\nNope.",
+          version: "0.1.0",
+          changelog: "Initial draft",
+        },
+        admin,
+        "2026-06-02T09:00:00.000Z",
+      ),
+    ).toThrow("Category must be selected from the system directory");
+
+    expect(() =>
+      createSkillDraft(
+        {
+          name: "Invalid Asset",
+          description: "Should fail validation",
+          category: "Tools",
+          tags: [],
+          compatibleTools: ["Codex"],
+          maintainingTeam: "SRE",
+          maintainers: ["Mira Admin"],
+          installMethod: "Install from internal registry",
+          dependencies: [],
+          readme: "## Usage\nNope.",
+          references: [{ path: "../secret.md", content: "nope" }],
+          version: "0.1.0",
+          changelog: "Initial draft",
+        },
+        admin,
+        "2026-06-02T09:00:00.000Z",
+      ),
+    ).toThrow("references path must be a safe relative path");
+  });
+
   test("lets employees create personal Skill drafts with ownership metadata", () => {
     const result = createSkillDraft(
       {
         name: "Personal Runbook",
         description: "A personal workflow before public review",
-        category: "Operations",
+        category: "Tools",
         tags: ["personal"],
         compatibleTools: ["Codex"],
         maintainingTeam: "SRE",
@@ -151,7 +252,7 @@ describe("skill service", () => {
       {
         name: "Personal Release",
         description: "Employee-owned Skill",
-        category: "Operations",
+        category: "Tools",
         tags: ["personal"],
         compatibleTools: ["Codex"],
         maintainingTeam: "SRE",
@@ -252,7 +353,7 @@ describe("skill service", () => {
         repositoryName: "rag-helper",
         name: "Imported RAG Helper",
         description: "Imported from trusted internal Git",
-        category: "Knowledge",
+        category: "Data&AI",
         compatibleTools: ["Codex"],
         maintainingTeam: "AI Platform",
         readme: "Imported README",
@@ -289,6 +390,8 @@ describe("skill service", () => {
       published,
       {
         readme: "Updated instructions",
+        references: [{ path: "usage-guide.md", content: "Updated guide" }],
+        scripts: [{ path: "helpers/check.js", content: "console.log('ok');" }],
         version: "0.2.0",
         changelog: "Clarified usage",
       },
@@ -302,25 +405,48 @@ describe("skill service", () => {
       "0.1.0",
       "0.2.0",
     ]);
+    expect(result.skill.references).toEqual([
+      { path: "usage-guide.md", content: "Updated guide" },
+    ]);
+    expect(result.skill.scripts).toEqual([
+      { path: "helpers/check.js", content: "console.log('ok');" },
+    ]);
+    expect(result.skill.versions.at(-1)?.references).toEqual(result.skill.references);
+    expect(result.skill.versions.at(-1)?.scripts).toEqual(result.skill.scripts);
   });
 
   test("applies bulk archive and category updates to selected Skills", () => {
     const result = applyBulkAction(
-      [draftSkill, { ...draftSkill, id: "second-skill", category: "Support" }],
+      [draftSkill, { ...draftSkill, id: "second-skill", category: "Tools" }],
       {
         type: "change_category",
         skillIds: ["draft-skill", "second-skill"],
-        category: "Platform",
+        category: "Development",
       },
       admin,
       "2026-05-30T13:00:00.000Z",
     );
 
     expect(result.skills.map((skill) => skill.category)).toEqual([
-      "Platform",
-      "Platform",
+      "Development",
+      "Development",
     ]);
     expect(result.auditLogs).toHaveLength(2);
+  });
+
+  test("rejects bulk category changes outside the system directory", () => {
+    expect(() =>
+      applyBulkAction(
+        [draftSkill],
+        {
+          type: "change_category",
+          skillIds: ["draft-skill"],
+          category: "Platform",
+        },
+        admin,
+        "2026-05-30T13:00:00.000Z",
+      ),
+    ).toThrow("Category must be selected from the system directory");
   });
 
   test("tracks a visible version for the current actor and writes an audit log", () => {

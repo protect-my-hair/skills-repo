@@ -1,4 +1,5 @@
 import type { PrismaClient } from "@/generated/prisma/client";
+import type { InputJsonValue } from "@prisma/client/runtime/client";
 import {
   AuditAction,
   ImportJobStatus,
@@ -10,6 +11,7 @@ import {
 import type {
   GitImportJob as DomainGitImportJob,
   GitImportSource as DomainGitImportSource,
+  SkillAssetFile,
   SkillVersion as DomainSkillVersion,
 } from "./domain";
 import { INTERNAL_AUTH_USERS } from "./internal-users";
@@ -23,6 +25,7 @@ import {
   skillVisibilityFromDatabase,
   skillVisibilityToDatabase,
 } from "./prisma-mappers";
+import { normalizeSkillAssetFiles } from "./skill-assets";
 import { getPrismaClient } from "./prisma";
 import type { SkillStoreSnapshot } from "./seed-data";
 import { readStore, updateStore } from "./store";
@@ -130,6 +133,8 @@ async function readPrismaSnapshot(
       installMethod: skill.installMethod,
       dependencies: skill.dependencies,
       readme: skill.readme,
+      references: toDomainAssetFiles(skill.referenceFiles, "references"),
+      scripts: toDomainAssetFiles(skill.scriptFiles, "scripts"),
       currentVersionId: skill.currentVersionId,
       versions: skill.versions.map(toDomainVersion),
       reviewSubmittedAt: skill.reviewSubmittedAt?.toISOString(),
@@ -222,6 +227,8 @@ async function writePrismaSnapshot(
             installMethod: skill.installMethod,
             dependencies: skill.dependencies,
             readme: skill.readme,
+            referenceFiles: toPrismaAssetFiles(skill.references),
+            scriptFiles: toPrismaAssetFiles(skill.scripts),
             reviewSubmittedAt: skill.reviewSubmittedAt ? new Date(skill.reviewSubmittedAt) : null,
             reviewReviewerName: skill.reviewReviewerName,
             reviewReviewedAt: skill.reviewReviewedAt ? new Date(skill.reviewReviewedAt) : null,
@@ -241,6 +248,8 @@ async function writePrismaSnapshot(
               version: version.version,
               content: version.content,
               changelog: version.changelog,
+              referenceFiles: toPrismaAssetFiles(version.references),
+              scriptFiles: toPrismaAssetFiles(version.scripts),
               createdAt: new Date(version.createdAt),
               authorId: userIdForName(version.author),
               publishedAt: version.publishedAt ? new Date(version.publishedAt) : null,
@@ -310,6 +319,8 @@ interface PrismaSkillVersionRow {
   version: string;
   content: string;
   changelog: string;
+  referenceFiles: unknown;
+  scriptFiles: unknown;
   createdAt: Date;
   authorId: string;
   publishedAt: Date | null;
@@ -324,11 +335,33 @@ function toDomainVersion(version: PrismaSkillVersionRow): DomainSkillVersion {
     version: version.version,
     content: version.content,
     changelog: version.changelog,
+    references: toDomainAssetFiles(version.referenceFiles, "references"),
+    scripts: toDomainAssetFiles(version.scriptFiles, "scripts"),
     createdAt: version.createdAt.toISOString(),
     author: version.author.name ?? version.authorId,
     publishedAt: version.publishedAt?.toISOString(),
     publisher: version.publisher?.name ?? undefined,
   };
+}
+
+function toDomainAssetFiles(
+  files: unknown,
+  groupName: "references" | "scripts",
+): SkillAssetFile[] {
+  if (!Array.isArray(files)) {
+    return [];
+  }
+
+  return normalizeSkillAssetFiles(files as SkillAssetFile[], groupName);
+}
+
+function toPrismaAssetFiles(files: SkillAssetFile[]): InputJsonValue {
+  return files.map((file) => ({
+    path: file.path,
+    content: file.content,
+    ...(file.description ? { description: file.description } : {}),
+    ...(file.language ? { language: file.language } : {}),
+  })) as InputJsonValue;
 }
 
 interface PrismaGitImportSourceRow {

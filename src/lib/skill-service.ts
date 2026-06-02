@@ -3,6 +3,7 @@ import {
   type AuditLog,
   type GitImportJob,
   type GitImportSource,
+  type SkillAssetFile,
   type Skill,
   type SkillSourceMetadata,
   type SkillStatus,
@@ -11,6 +12,10 @@ import {
   SKILL_STATUSES,
 } from "./domain";
 import { forbiddenError, notFoundError, validationError } from "./api-errors";
+import {
+  normalizeSkillAssetGroups,
+  validateSkillCategory,
+} from "./skill-assets";
 
 export interface SkillDraftInput {
   name: string;
@@ -23,6 +28,8 @@ export interface SkillDraftInput {
   installMethod: string;
   dependencies?: string[];
   readme: string;
+  references?: SkillAssetFile[];
+  scripts?: SkillAssetFile[];
   version: string;
   changelog: string;
 }
@@ -36,6 +43,8 @@ export interface GitImportInput {
   compatibleTools: string[];
   maintainingTeam: string;
   readme: string;
+  references?: SkillAssetFile[];
+  scripts?: SkillAssetFile[];
   version: string;
   changelog: string;
 }
@@ -51,6 +60,8 @@ export interface UpdateSkillInput {
   installMethod?: string;
   dependencies?: string[];
   readme: string;
+  references?: SkillAssetFile[];
+  scripts?: SkillAssetFile[];
   version: string;
   changelog: string;
 }
@@ -108,6 +119,11 @@ export function createSkillDraft(
   validateDraftInput(input);
 
   const skillId = toId(input.name);
+  const category = validateSkillCategory(input.category);
+  const assetGroups = normalizeSkillAssetGroups({
+    references: input.references,
+    scripts: input.scripts,
+  });
   const version: SkillVersion = {
     id: `${skillId}-${toId(input.version)}`,
     version: input.version.trim(),
@@ -115,13 +131,15 @@ export function createSkillDraft(
     changelog: input.changelog.trim(),
     createdAt: now,
     author: actor.name,
+    references: assetGroups.references,
+    scripts: assetGroups.scripts,
   };
 
   const skill: Skill = {
     id: skillId,
     name: input.name.trim(),
     description: input.description.trim(),
-    category: input.category.trim(),
+    category,
     tags: normalizeList(input.tags ?? []),
     compatibleTools: normalizeList(input.compatibleTools),
     status: "draft",
@@ -135,6 +153,8 @@ export function createSkillDraft(
     installMethod: input.installMethod.trim(),
     dependencies: normalizeList(input.dependencies ?? []),
     readme: input.readme.trim(),
+    references: assetGroups.references,
+    scripts: assetGroups.scripts,
     currentVersionId: null,
     versions: [version],
   };
@@ -164,6 +184,8 @@ export function importSkillFromGit(
       installMethod: "Install from internal registry after publication",
       dependencies: [],
       readme: input.readme,
+      references: input.references,
+      scripts: input.scripts,
       version: input.version,
       changelog: input.changelog,
     },
@@ -200,6 +222,13 @@ export function updateSkillContent(
   validateText(input.readme, "Content body");
   validateText(input.version, "Version number");
   validateText(input.changelog, "Changelog");
+  const category = input.category
+    ? validateSkillCategory(input.category)
+    : skill.category;
+  const assetGroups = normalizeSkillAssetGroups({
+    references: input.references ?? skill.references,
+    scripts: input.scripts ?? skill.scripts,
+  });
 
   const version: SkillVersion = {
     id: `${skill.id}-${toId(input.version)}-${skill.versions.length + 1}`,
@@ -208,6 +237,8 @@ export function updateSkillContent(
     changelog: input.changelog.trim(),
     createdAt: now,
     author: actor.name,
+    references: assetGroups.references,
+    scripts: assetGroups.scripts,
   };
 
   const nextStatus = skill.status === "published" ? "pending_review" : skill.status;
@@ -215,7 +246,7 @@ export function updateSkillContent(
     ...skill,
     name: input.name?.trim() || skill.name,
     description: input.description?.trim() || skill.description,
-    category: input.category?.trim() || skill.category,
+    category,
     tags: input.tags ? normalizeList(input.tags) : skill.tags,
     compatibleTools: input.compatibleTools
       ? normalizeList(input.compatibleTools)
@@ -229,6 +260,8 @@ export function updateSkillContent(
       ? normalizeList(input.dependencies)
       : skill.dependencies,
     readme: input.readme.trim(),
+    references: assetGroups.references,
+    scripts: assetGroups.scripts,
     status: nextStatus,
     updatedAt: now,
     versions: [...skill.versions, version],
@@ -275,10 +308,10 @@ export function applyBulkAction(
     }
 
     if (action.type === "change_category") {
-      validateText(action.category, "Category");
+      const category = validateSkillCategory(action.category);
       const updatedSkill = {
         ...skill,
-        category: action.category.trim(),
+        category,
         updatedAt: now,
       };
 
@@ -375,6 +408,8 @@ function validateControlledGitInput(input: GitImportInput): void {
     maintainers: ["importer"],
     installMethod: "Internal registry",
     readme: input.readme,
+    references: input.references,
+    scripts: input.scripts,
     version: input.version,
     changelog: input.changelog,
   });

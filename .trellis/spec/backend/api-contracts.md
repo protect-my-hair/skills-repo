@@ -76,6 +76,8 @@ API errors use:
 | Unknown Skill id | `404 { code: "not_found", error: "Skill not found" }` |
 | Employee reads/tracks restricted Skill | `404 { code: "not_found", error: "Skill not found" }` |
 | Git import outside `https://git.company.local/` | `400 { code: "validation", error: "Only controlled internal Git repositories are supported" }` |
+| UI-created/edited category outside the system category directory | `400 { code: "validation", error: "Category must be selected from the system directory" }` |
+| Unsafe, duplicate, or empty `references` / `scripts` file | `400 { code: "validation", error: "<group> ... " }` |
 | Unknown error | `500 { code: "internal", error: "Request failed" }` |
 
 ### 5. Good/Base/Bad Cases
@@ -163,12 +165,20 @@ Successful response:
 Package contents:
 
 - Required: `SKILL.md`
-- Optional but currently included: `README.md`, `metadata.json`
+- Optional: `references/<path>` and `scripts/<path>` text files from the
+  current version snapshot when authors provided valid resource files.
 - `SKILL.md` must be generated from `SkillVersion.content` plus safe Skill
   metadata such as name, description, version, category, team, and compatible
   tools.
-- `metadata.json` must not include secrets, cookies, account state, server
-  stack traces, internal absolute paths, or raw source repository URLs.
+- `README.md` and `metadata.json` are not default MVP package contents. If a
+  future task needs package-level metadata or instructions, add a separate
+  product contract instead of silently reintroducing these files.
+- Resource file paths must be safe relative paths inside their package group:
+  no absolute paths, Windows drive prefixes, `..`, empty segments, control
+  characters, top-level `references/` or `scripts/` prefixes, or duplicate
+  case-insensitive paths within the same group.
+- Resource file contents are text-only for MVP. Empty files and binary
+  attachments are out of scope.
 
 Installability:
 
@@ -198,8 +208,9 @@ Installability:
 
 ### 6. Tests Required
 
-- `src/lib/skill-package.test.ts`: package file name, `SKILL.md`, metadata
-  shape, installability, and generated install commands.
+- `src/lib/skill-package.test.ts`: package file name, `SKILL.md`, optional
+  `references/` / `scripts/` files, absence of default `README.md` /
+  `metadata.json`, installability, and generated install commands.
 - `src/app/api/skills/[skillId]/package/route.test.ts`: route source contract
   for session resolution, `canReadSkill`, awaited params, safe 404, zip
   response headers, and `createSkillPackageArchive`.

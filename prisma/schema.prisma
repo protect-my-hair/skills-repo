@@ -129,6 +129,8 @@ model Skill {
   installMethod     String
   dependencies      String[]
   readme            String
+  referenceFiles    Json               @default("[]")
+  scriptFiles       Json               @default("[]")
   currentVersionId  String?
   reviewSubmittedAt DateTime?
   reviewReviewerName String?
@@ -152,6 +154,8 @@ model SkillVersion {
   version             String
   content             String
   changelog           String
+  referenceFiles      Json             @default("[]")
+  scriptFiles         Json             @default("[]")
   createdAt           DateTime         @default(now())
   authorId            String
   publishedAt         DateTime?

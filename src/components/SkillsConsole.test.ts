@@ -67,6 +67,28 @@ describe("SkillsConsole install actions", () => {
   });
 });
 
+describe("SkillsConsole Skill authoring", () => {
+  test("uses the shared system category directory for edit and bulk category controls", () => {
+    expect(source).toContain("SYSTEM_SKILL_CATEGORIES");
+    expect(source).toContain("skill-category-select");
+    expect(source).toContain("bulk-category-select");
+    expect(source).toContain("SYSTEM_SKILL_CATEGORIES.map((item)");
+    expect(source).not.toContain("setBulkCategory(event.target.value)} />");
+  });
+
+  test("separates SKILL.md editing from optional references and scripts file groups", () => {
+    expect(source).toContain("SkillAssetFileEditor");
+    expect(source).toContain("references/");
+    expect(source).toContain("scripts/");
+    expect(source).toContain("UI_COPY.editor.skillMarkdown");
+    expect(source).toContain("resource-file-group");
+    expect(source).toContain('role="alert"');
+    expect(globalStyles).toContain(".resource-file-group");
+    expect(globalStyles).toContain(".resource-file-grid");
+    expect(globalStyles).toContain(".resource-file-error");
+  });
+});
+
 function getFunctionBody(name: string): string {
   return source.match(new RegExp(`function ${name}[^}]+}`))?.[0] ?? "";
 }

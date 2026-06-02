@@ -27,6 +27,8 @@ const skills: Skill[] = [
     installMethod: "Install from internal registry",
     dependencies: ["vector-index"],
     readme: "Use this skill when answering support questions.",
+    references: [],
+    scripts: [],
     currentVersionId: "rag-v2",
     versions: [
       {
@@ -38,6 +40,8 @@ const skills: Skill[] = [
         author: "Ada Chen",
         publishedAt: "2026-05-01T10:00:00.000Z",
         publisher: "Ada Chen",
+        references: [],
+        scripts: [],
       },
       {
         id: "rag-v2",
@@ -48,6 +52,8 @@ const skills: Skill[] = [
         author: "Ada Chen",
         publishedAt: "2026-05-28T10:00:00.000Z",
         publisher: "Ada Chen",
+        references: [],
+        scripts: [],
       },
     ],
   },
@@ -69,6 +75,8 @@ const skills: Skill[] = [
     installMethod: "Pending publication",
     dependencies: [],
     readme: "Draft finance workflow.",
+    references: [],
+    scripts: [],
     currentVersionId: null,
     versions: [
       {
@@ -78,6 +86,8 @@ const skills: Skill[] = [
         changelog: "Draft created",
         createdAt: "2026-05-29T09:00:00.000Z",
         author: "Lin Zhao",
+        references: [],
+        scripts: [],
       },
     ],
   },

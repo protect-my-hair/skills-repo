@@ -2,6 +2,7 @@ import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 
 import { seededStore, type SkillStoreSnapshot } from "./seed-data";
+import type { Skill, SkillVersion } from "./domain";
 
 const DATA_DIR = path.join(process.cwd(), "data");
 const STORE_PATH = path.join(DATA_DIR, "skills-store.json");
@@ -20,7 +21,7 @@ export async function readStore(): Promise<SkillStoreSnapshot> {
   }
 
   return {
-    skills: parsed.skills,
+    skills: parsed.skills.map(normalizeStoredSkill),
     trackedVersions: parsed.trackedVersions,
     auditLogs: parsed.auditLogs,
     gitImportSources: parsed.gitImportSources ?? [],
@@ -62,4 +63,21 @@ function isMissingFileError(error: unknown): boolean {
     "code" in error &&
     (error as { code?: string }).code === "ENOENT"
   );
+}
+
+function normalizeStoredSkill(skill: Skill): Skill {
+  return {
+    ...skill,
+    references: skill.references ?? [],
+    scripts: skill.scripts ?? [],
+    versions: skill.versions.map(normalizeStoredVersion),
+  };
+}
+
+function normalizeStoredVersion(version: SkillVersion): SkillVersion {
+  return {
+    ...version,
+    references: version.references ?? [],
+    scripts: version.scripts ?? [],
+  };
 }

@@ -12,6 +12,7 @@ import {
   CalendarDays,
   Download,
   Eye,
+  FileText,
   GitBranch,
   LayoutGrid,
   LogOut,
@@ -22,6 +23,7 @@ import {
   Star,
   Table2,
   Tag,
+  Trash2,
   Upload,
   Users,
 } from "lucide-react";
@@ -35,6 +37,7 @@ import {
   getVersionState,
   type AuditLog,
   type Skill,
+  type SkillAssetFile,
   type SkillStatus,
 } from "@/lib/domain";
 import {
@@ -51,6 +54,7 @@ import {
   getSkillPackageDownloadPath,
   type InstallTarget,
 } from "@/lib/skill-install";
+import { SYSTEM_SKILL_CATEGORIES } from "@/lib/skill-assets";
 import type { GitImportInput, SkillDraftInput, UpdateSkillInput } from "@/lib/skill-service";
 import { PRODUCT_NAME, ROLE_LABELS, STATUS_LABELS, UI_COPY } from "@/lib/ui-copy";
 
@@ -71,6 +75,8 @@ interface SkillFormState {
   installMethod: string;
   dependencies: string;
   readme: string;
+  references: SkillAssetFile[];
+  scripts: SkillAssetFile[];
   version: string;
   changelog: string;
   repositoryUrl: string;
@@ -80,7 +86,7 @@ interface SkillFormState {
 const EMPTY_FORM: SkillFormState = {
   name: "",
   description: "",
-  category: "",
+  category: SYSTEM_SKILL_CATEGORIES[0],
   tags: "",
   compatibleTools: "Codex",
   maintainingTeam: "",
@@ -88,6 +94,8 @@ const EMPTY_FORM: SkillFormState = {
   installMethod: "从内部 Registry 安装",
   dependencies: "",
   readme: "## 使用说明\n描述员工何时以及如何使用这个 Skill。",
+  references: [],
+  scripts: [],
   version: "0.1.0",
   changelog: "初始草稿",
   repositoryUrl: "https://git.company.local/skills/",
@@ -111,7 +119,9 @@ export function SkillsConsole() {
   const [editorMode, setEditorMode] = useState<EditorMode | null>(null);
   const [previewMode, setPreviewMode] = useState<PreviewMode>("split");
   const [form, setForm] = useState<SkillFormState>(EMPTY_FORM);
-  const [bulkCategory, setBulkCategory] = useState("平台");
+  const [bulkCategory, setBulkCategory] = useState<string>(
+    SYSTEM_SKILL_CATEGORIES[0],
+  );
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
   const currentUser = snapshot?.currentUser ?? null;
@@ -311,6 +321,8 @@ export function SkillsConsole() {
       installMethod: skill.installMethod,
       dependencies: skill.dependencies.join(", "),
       readme: skill.readme,
+      references: skill.references,
+      scripts: skill.scripts,
       version: incrementPatch(latestVersion?.version ?? "0.1.0"),
       changelog: "",
       repositoryUrl: skill.sourceMetadata?.repositoryUrl ?? EMPTY_FORM.repositoryUrl,
@@ -339,6 +351,8 @@ export function SkillsConsole() {
         compatibleTools: splitList(form.compatibleTools),
         maintainingTeam: form.maintainingTeam,
         readme: form.readme,
+        references: form.references,
+        scripts: form.scripts,
         version: form.version,
         changelog: form.changelog,
       };
@@ -719,7 +733,17 @@ export function SkillsConsole() {
                     </button>
                     <label className="bulk-category">
                       <span>{UI_COPY.admin.category}</span>
-                      <input value={bulkCategory} onChange={(event) => setBulkCategory(event.target.value)} />
+                      <select
+                        className="bulk-category-select"
+                        value={bulkCategory}
+                        onChange={(event) => setBulkCategory(event.target.value)}
+                      >
+                        {SYSTEM_SKILL_CATEGORIES.map((item) => (
+                          <option key={item} value={item}>
+                            {item}
+                          </option>
+                        ))}
+                      </select>
                     </label>
                     <button
                       className="icon-text-button"
@@ -1590,7 +1614,10 @@ function SkillEditorForm({
   onPreviewModeChange: (mode: PreviewMode) => void;
   onSubmit: () => void;
 }) {
-  function updateField(field: keyof SkillFormState, value: string) {
+  function updateField<K extends keyof SkillFormState>(
+    field: K,
+    value: SkillFormState[K],
+  ) {
     onChange({ ...form, [field]: value });
   }
 
@@ -1621,7 +1648,17 @@ function SkillEditorForm({
         </label>
         <label>
           {UI_COPY.editor.category}
-          <input value={form.category} onChange={(event) => updateField("category", event.target.value)} />
+          <select
+            className="skill-category-select"
+            value={form.category}
+            onChange={(event) => updateField("category", event.target.value)}
+          >
+            {SYSTEM_SKILL_CATEGORIES.map((item) => (
+              <option key={item} value={item}>
+                {item}
+              </option>
+            ))}
+          </select>
         </label>
       </div>
       <label>
@@ -1667,7 +1704,7 @@ function SkillEditorForm({
         <input value={form.changelog} onChange={(event) => updateField("changelog", event.target.value)} />
       </label>
       <div className="editor-mode-bar">
-        <span>{UI_COPY.editor.markdown}</span>
+        <span>{UI_COPY.editor.skillMarkdown}</span>
         <div className="segmented-control">
           <button
             className={previewMode === "edit" ? "active" : ""}
@@ -1701,12 +1738,154 @@ function SkillEditorForm({
         ) : null}
         {previewMode !== "edit" ? <MarkdownPreview content={form.readme} /> : null}
       </div>
+      <SkillAssetFileEditor
+        directory="references"
+        files={form.references}
+        title={UI_COPY.editor.referencesTitle}
+        onChange={(files) => updateField("references", files)}
+      />
+      <SkillAssetFileEditor
+        directory="scripts"
+        files={form.scripts}
+        title={UI_COPY.editor.scriptsTitle}
+        onChange={(files) => updateField("scripts", files)}
+      />
       <div className="editor-footer">
         <button className="primary-button" type="submit">
           {mode === "edit" ? UI_COPY.actions.saveDraftVersion : UI_COPY.actions.createDraft}
         </button>
       </div>
     </form>
+  );
+}
+
+function SkillAssetFileEditor({
+  directory,
+  files,
+  onChange,
+  title,
+}: {
+  directory: "references" | "scripts";
+  files: SkillAssetFile[];
+  onChange: (files: SkillAssetFile[]) => void;
+  title: string;
+}) {
+  const packageDirectory =
+    directory === "references" ? "references/" : "scripts/";
+
+  function addFile() {
+    onChange([...files, { path: "", content: "" }]);
+  }
+
+  function updateFile<K extends keyof SkillAssetFile>(
+    index: number,
+    field: K,
+    value: SkillAssetFile[K],
+  ) {
+    onChange(
+      files.map((file, fileIndex) =>
+        fileIndex === index ? { ...file, [field]: value } : file,
+      ),
+    );
+  }
+
+  function removeFile(index: number) {
+    onChange(files.filter((_, fileIndex) => fileIndex !== index));
+  }
+
+  return (
+    <details className="resource-file-group" open={files.length > 0}>
+      <summary>
+        <span>
+          <FileText size={16} aria-hidden="true" />
+          {title}
+        </span>
+        <small>
+          {packageDirectory} · {files.length}
+        </small>
+      </summary>
+      <div className="resource-file-body">
+        <p>{UI_COPY.editor.assetGroupHelp}</p>
+        {files.length === 0 ? (
+          <div className="resource-file-empty">
+            {UI_COPY.editor.assetGroupEmpty}
+          </div>
+        ) : (
+          <div className="resource-file-list">
+            {files.map((file, index) => {
+              const error = getResourceFileError(file, files, directory, index);
+
+              return (
+                <div className="resource-file-row" key={`${directory}-${index}`}>
+                  <div className="resource-file-grid">
+                    <label>
+                      {UI_COPY.editor.filePath}
+                      <input
+                        value={file.path}
+                        placeholder={directory === "references" ? "usage-guide.md" : "helpers/install.ps1"}
+                        onChange={(event) =>
+                          updateFile(index, "path", event.target.value)
+                        }
+                      />
+                    </label>
+                    <label>
+                      {UI_COPY.editor.fileDescription}
+                      <input
+                        value={file.description ?? ""}
+                        onChange={(event) =>
+                          updateFile(index, "description", event.target.value)
+                        }
+                      />
+                    </label>
+                    <label>
+                      {UI_COPY.editor.fileLanguage}
+                      <input
+                        value={file.language ?? ""}
+                        onChange={(event) =>
+                          updateFile(index, "language", event.target.value)
+                        }
+                      />
+                    </label>
+                  </div>
+                  <label className="resource-file-content">
+                    {UI_COPY.editor.fileContent}
+                    <textarea
+                      value={file.content}
+                      onChange={(event) =>
+                        updateFile(index, "content", event.target.value)
+                      }
+                    />
+                  </label>
+                  <div className="resource-file-actions">
+                    {error ? (
+                      <span className="resource-file-error" role="alert">
+                        {error}
+                      </span>
+                    ) : (
+                      <span className="resource-file-path">
+                        {packageDirectory}{file.path.trim()}
+                      </span>
+                    )}
+                    <button
+                      className="icon-text-button"
+                      type="button"
+                      onClick={() => removeFile(index)}
+                    >
+                      <Trash2 size={16} aria-hidden="true" />
+                      {UI_COPY.editor.removeFile}
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+        <button className="icon-text-button" type="button" onClick={addFile}>
+          <Plus size={16} aria-hidden="true" />
+          {UI_COPY.editor.addFile}
+        </button>
+      </div>
+    </details>
   );
 }
 
@@ -1790,9 +1969,55 @@ function toDraftInput(form: SkillFormState): SkillDraftInput {
     installMethod: form.installMethod,
     dependencies: splitList(form.dependencies),
     readme: form.readme,
+    references: form.references,
+    scripts: form.scripts,
     version: form.version,
     changelog: form.changelog,
   };
+}
+
+function getResourceFileError(
+  file: SkillAssetFile,
+  files: SkillAssetFile[],
+  directory: "references" | "scripts",
+  index: number,
+): string {
+  const path = file.path.trim();
+
+  if (!path) {
+    return UI_COPY.editor.assetPathRequired;
+  }
+
+  if (
+    path.includes("\\") ||
+    path.startsWith("/") ||
+    /^[a-zA-Z]:/.test(path) ||
+    /[\u0000-\u001f\u007f]/.test(path) ||
+    path.split("/").some((segment) => !segment || segment === "." || segment === "..")
+  ) {
+    return UI_COPY.editor.assetPathUnsafe;
+  }
+
+  const firstSegment = path.split("/")[0]?.toLowerCase();
+
+  if (firstSegment === "references" || firstSegment === "scripts") {
+    return UI_COPY.editor.assetPathIncludesDirectory;
+  }
+
+  if (!file.content.trim()) {
+    return UI_COPY.editor.assetContentRequired;
+  }
+
+  const lowerPath = path.toLowerCase();
+  const duplicateIndex = files.findIndex(
+    (item) => item.path.trim().toLowerCase() === lowerPath,
+  );
+
+  if (duplicateIndex !== index) {
+    return UI_COPY.editor.assetPathDuplicate;
+  }
+
+  return "";
 }
 
 function splitList(value: string): string[] {
